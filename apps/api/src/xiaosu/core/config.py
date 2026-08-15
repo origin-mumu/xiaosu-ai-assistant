@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     web_origin: str = "http://localhost:5173"
     database_url: str = "postgresql+asyncpg://xiaosu:xiaosu@localhost:5432/xiaosu"
     log_dir: Path = Field(default=Path("logs"))
+    upload_dir: Path = Field(default=Path("uploads"))
+    max_upload_bytes: int = 20 * 1024 * 1024
+    chunk_size: int = 700
+    chunk_overlap: int = 100
+    retrieval_top_k: int = 5
     llm_provider: Literal["dashscope"] = "dashscope"
     dashscope_api_key: SecretStr | None = None
     dashscope_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
