@@ -60,7 +60,7 @@ flowchart LR
 ```text
 apps/api/             FastAPI、Agent、RAG、钉钉适配与测试
 apps/web/             Vue 管理后台
-data/documents/       8 份多格式演示知识库
+data/documents/       9 份多格式演示知识库（约 1.7 MB）
 docker/               API/Web 镜像与 Nginx 配置
 docs/                 模型、钉钉配置和界面截图
 scripts/              启停、测试、检查、造数和 Evals
@@ -116,6 +116,8 @@ Windows 建议使用 WSL/Git Bash 执行脚本；也可在 PowerShell 中运行 
 ```bash
 ./scripts/seed.sh
 ```
+
+演示库覆盖员工制度、入职、40 条 FAQ、信息安全、会议室与访客、差旅报销、IT 设备账号和销售服务规范，包含 Markdown、TXT、DOCX 与 PDF。需要重新生成这些样例时执行 `./scripts/generate_samples.sh`。
 
 文档页会显示 `pending → indexing → indexed`。如果先在未填写 Key 时上传，文件会保留为 `failed`，填写 Key 并重启后点击“重建”即可。
 
