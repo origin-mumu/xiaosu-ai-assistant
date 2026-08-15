@@ -406,6 +406,31 @@ body { background: #f1f5fb; }
 .filters { display: flex; gap: 16px; align-items: center; }
 .inline-setting { display: flex; gap: 8px; }
 
+.document-actions {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.document-actions .el-button {
+  min-height: 32px;
+  padding: 0 10px;
+  margin-left: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.document-actions .el-button:hover,
+.document-actions .el-button:focus-visible {
+  background: #f1f4fb;
+  box-shadow: none;
+}
+
+.document-actions .el-button--primary { color: #4f6ef7; }
+.document-actions .el-button--danger { color: #ef5d5d; }
+
 .log-table-shell { width: 100%; overflow-x: auto; border-radius: 16px; }
 .log-table-shell .el-table { min-width: 1260px; }
 

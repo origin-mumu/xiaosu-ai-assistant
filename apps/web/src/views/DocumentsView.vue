@@ -116,9 +116,11 @@ onMounted(async () => {
       <el-table-column label="更新时间" width="180"><template #default="scope">{{ new Date(scope.row.updated_at).toLocaleString() }}</template></el-table-column>
       <el-table-column label="操作" width="230" fixed="right">
         <template #default="scope">
-          <el-button link type="primary" @click="openDetail(scope.row)">查看原文</el-button>
-          <el-button link @click="handleReindex(scope.row)">重建</el-button>
-          <el-button link type="danger" @click="handleDelete(scope.row)">删除</el-button>
+          <div class="document-actions">
+            <el-button text type="primary" @click="openDetail(scope.row)">查看原文</el-button>
+            <el-button text @click="handleReindex(scope.row)">重建</el-button>
+            <el-button text type="danger" @click="handleDelete(scope.row)">删除</el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
