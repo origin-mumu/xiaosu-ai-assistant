@@ -20,4 +20,3 @@
   {"id": "O2026061701", "amount": "2300.00", "refund_amount": "0", "date": "2026-06-17", "customer": "R公司", "status": "paid"},
   {"id": "O2026061801", "amount": "750.00", "refund_amount": "0", "date": "2026-06-18", "customer": "S公司", "status": "cancelled"}
 ]
-

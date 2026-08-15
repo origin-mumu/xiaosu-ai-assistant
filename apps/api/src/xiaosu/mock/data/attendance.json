@@ -25,4 +25,3 @@
   {"emp_id": "004", "date": "2026-08-06", "check_in": null, "check_out": null, "status": "absent"},
   {"emp_id": "004", "date": "2026-08-07", "check_in": "08:58", "check_out": "18:03", "status": "normal"}
 ]
-
