@@ -49,5 +49,24 @@ services:
     depends_on:
       - api
 
+  bot:
+    image: xiaosu-api
+    command: ["python", "-m", "xiaosu.im.worker"]
+    profiles: ["dingtalk"]
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql+asyncpg://xiaosu:xiaosu@postgres:5432/xiaosu
+      LOG_DIR: /app/logs
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_started
+
 volumes:
   postgres_data:

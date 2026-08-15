@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     app_host: str = "0.0.0.0"
     app_port: int = 8000
     web_origin: str = "http://localhost:5173"
+    public_base_url: str = "http://localhost:5173"
     database_url: str = "postgresql+asyncpg://xiaosu:xiaosu@localhost:5432/xiaosu"
     log_dir: Path = Field(default=Path("logs"))
     upload_dir: Path = Field(default=Path("uploads"))
