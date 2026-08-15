@@ -6,11 +6,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from xiaosu.agent.schemas import MessageLogResponse
+from xiaosu.api.auth import require_admin
 from xiaosu.core.config import Settings, get_settings
 from xiaosu.db.models import Conversation, Message
 from xiaosu.db.session import get_session
 
-router = APIRouter(prefix="/admin", tags=["admin"])
+router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 SessionDependency = Annotated[AsyncSession, Depends(get_session)]
 
 

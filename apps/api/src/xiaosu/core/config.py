@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     model_timeout_seconds: float = 30
     input_price_per_million: float = 0.8
     output_price_per_million: float = 2.0
+    admin_username: str = "admin"
+    admin_password: SecretStr | None = None
+    session_secret: SecretStr | None = None
+    admin_token: SecretStr | None = None
+    session_ttl_seconds: int = 8 * 60 * 60
     dingtalk_client_id: SecretStr | None = None
     dingtalk_client_secret: SecretStr | None = None
     dingtalk_robot_code: str | None = None

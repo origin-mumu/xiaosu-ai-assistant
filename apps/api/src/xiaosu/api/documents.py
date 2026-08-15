@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from xiaosu.api.auth import require_admin
 from xiaosu.core.config import Settings, get_settings
 from xiaosu.db.session import get_session
 from xiaosu.knowledge.parser import SUPPORTED_EXTENSIONS, UnsupportedDocumentError
@@ -16,7 +17,7 @@ from xiaosu.knowledge.schemas import (
 )
 from xiaosu.knowledge.service import DocumentNotFoundError, DocumentService
 
-router = APIRouter(prefix="/documents", tags=["documents"])
+router = APIRouter(prefix="/documents", tags=["documents"], dependencies=[Depends(require_admin)])
 SessionDependency = Annotated[AsyncSession, Depends(get_session)]
 SettingsDependency = Annotated[Settings, Depends(get_settings)]
 

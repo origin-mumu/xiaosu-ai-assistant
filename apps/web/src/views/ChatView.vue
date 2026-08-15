@@ -56,7 +56,7 @@ async function send(): Promise<void> {
   <el-card shadow="never" class="chat-card">
     <div class="chat-list">
       <div v-if="!messages.length" class="chat-empty">
-        <span class="brand-mark">苏</span>
+        <span class="chat-mascot"><img src="/xiaosu-mascot.png" alt="小苏" /></span>
         <h2>你好，我是小苏</h2>
         <p>试试问：员工 001 是哪个部门的？／上周一共多少订单？／现在几点？</p>
       </div>

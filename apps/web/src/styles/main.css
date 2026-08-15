@@ -61,29 +61,21 @@ body { background: #f1f5fb; }
 }
 
 .brand-mark {
-  position: relative;
   display: grid;
   flex: 0 0 auto;
   width: 46px;
   height: 46px;
-  overflow: hidden;
-  color: #fff;
-  font-weight: 750;
-  font-size: 19px;
   place-items: center;
-  background: linear-gradient(145deg, #718aff, #3d5be6);
+  overflow: hidden;
+  background: linear-gradient(145deg, #f4f0ff, #ebe8ff);
   border-radius: 16px;
   box-shadow: 0 10px 22px rgba(79, 110, 247, 0.28);
 }
 
-.brand-mark::after {
-  position: absolute;
-  inset: -40% -55% auto auto;
-  width: 70px;
-  height: 70px;
-  background: rgba(255, 255, 255, 0.18);
-  border-radius: 50%;
-  content: "";
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .brand-copy strong,
@@ -140,12 +132,7 @@ body { background: #f1f5fb; }
   box-shadow: 0 7px 14px rgba(79, 110, 247, 0.22);
 }
 
-.nav-icon::before { font-size: 14px; line-height: 1; }
-.nav-icon-grid::before { content: "◆"; font-size: 11px; }
-.nav-icon-file::before { content: "▤"; }
-.nav-icon-history::before { content: "◷"; font-size: 16px; }
-.nav-icon-sparkle::before { content: "✦"; }
-.nav-icon-setting::before { content: "⚙"; }
+.nav-icon .el-icon { font-size: 15px; }
 
 .sidebar-footer {
   display: flex;
@@ -206,15 +193,20 @@ body { background: #f1f5fb; }
   border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 16px;
   box-shadow: 0 7px 20px rgba(39, 55, 92, 0.05);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease;
 }
+
+.admin-chip:hover { box-shadow: 0 10px 24px rgba(39, 55, 92, 0.1); transform: translateY(-1px); }
 
 .admin-avatar {
   display: grid;
   width: 34px;
   height: 34px;
   color: #fff;
-  font-weight: 700;
-  font-size: 12px;
+  font-size: 17px;
   place-items: center;
   background: linear-gradient(145deg, #7288f5, #4f67d9);
   border-radius: 11px;
@@ -224,6 +216,7 @@ body { background: #f1f5fb; }
 .admin-chip small { display: block; }
 .admin-chip strong { color: #3d475b; font-size: 12px; }
 .admin-chip small { margin-top: 2px; color: #9ca5b5; font-size: 10px; }
+.logout-icon { margin-left: 5px; color: #9da6b6; font-size: 14px; }
 
 .app-main {
   min-width: 0;
@@ -323,6 +316,8 @@ body { background: #f1f5fb; }
   background: color-mix(in srgb, currentColor 11%, white);
   border-radius: 14px;
 }
+
+.metric-icon .el-icon { font-size: 18px; }
 
 .metric-badge { color: currentColor; font-weight: 700; font-size: 9px; letter-spacing: 0.12em; opacity: 0.68; }
 
@@ -441,6 +436,20 @@ body { background: #f1f5fb; }
 .chat-empty { display: grid; max-width: 620px; margin: 100px auto 0; text-align: center; place-items: center; }
 .chat-empty h2 { margin-bottom: 4px; }
 .chat-empty p { color: #8490a5; }
+
+.chat-mascot {
+  display: grid;
+  width: 76px;
+  height: 76px;
+  overflow: hidden;
+  place-items: center;
+  background: linear-gradient(145deg, #f5f1ff, #e9e8ff);
+  border: 5px solid rgba(255, 255, 255, 0.88);
+  border-radius: 26px;
+  box-shadow: 0 13px 30px rgba(103, 82, 171, 0.16);
+}
+
+.chat-mascot img { width: 100%; height: 100%; object-fit: cover; }
 .chat-message { display: flex; margin-bottom: 18px; }
 .chat-message.user { justify-content: flex-end; }
 
@@ -484,6 +493,188 @@ body { background: #f1f5fb; }
 
 .chat-input .el-button { height: auto; padding: 0 24px; }
 
+.login-page {
+  display: grid;
+  grid-template-columns: minmax(420px, 1.12fr) minmax(420px, 0.88fr);
+  min-height: 100vh;
+  padding: 22px;
+  background:
+    radial-gradient(circle at 12% 16%, rgba(196, 181, 253, 0.34), transparent 26%),
+    radial-gradient(circle at 86% 78%, rgba(147, 197, 253, 0.22), transparent 25%),
+    #f3f5fb;
+}
+
+.login-showcase {
+  position: relative;
+  display: flex;
+  min-height: calc(100vh - 44px);
+  padding: 34px 42px;
+  overflow: hidden;
+  flex-direction: column;
+  color: #fff;
+  background:
+    linear-gradient(145deg, rgba(68, 59, 135, 0.96), rgba(97, 82, 170, 0.92)),
+    #55458f;
+  border-radius: 32px;
+  box-shadow: 0 24px 70px rgba(63, 51, 118, 0.2);
+}
+
+.login-showcase::before,
+.login-showcase::after {
+  position: absolute;
+  width: 360px;
+  height: 360px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  content: "";
+}
+
+.login-showcase::before { top: -160px; right: -100px; }
+.login-showcase::after { bottom: -210px; left: -130px; }
+
+.login-brand {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-weight: 650;
+  font-size: 14px;
+}
+
+.login-brand img {
+  width: 42px;
+  height: 42px;
+  object-fit: cover;
+  background: #f4efff;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  border-radius: 14px;
+}
+
+.login-hero {
+  position: relative;
+  z-index: 2;
+  width: min(620px, 92%);
+  margin: auto;
+  padding: 42px 0 56px;
+}
+
+.mascot-stage {
+  position: absolute;
+  right: -38px;
+  bottom: 0;
+  width: min(310px, 44%);
+  filter: drop-shadow(0 22px 24px rgba(31, 23, 72, 0.24));
+}
+
+.mascot-stage::before {
+  position: absolute;
+  right: 2%;
+  bottom: 2%;
+  left: 2%;
+  height: 30%;
+  background: rgba(235, 226, 255, 0.25);
+  border-radius: 50%;
+  filter: blur(18px);
+  content: "";
+}
+
+.mascot-stage img { position: relative; display: block; width: 100%; }
+
+.login-kicker,
+.login-panel-kicker {
+  display: block;
+  font-weight: 750;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+}
+
+.login-kicker { color: #d6cff5; }
+
+.login-hero h1 {
+  max-width: 420px;
+  margin: 16px 0 18px;
+  font-size: clamp(38px, 4.3vw, 66px);
+  line-height: 1.15;
+  letter-spacing: -0.05em;
+}
+
+.login-hero p {
+  max-width: 370px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.login-feature-row {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.login-feature-row span {
+  padding: 8px 12px;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+}
+
+.login-panel-wrap {
+  display: grid;
+  padding: 40px;
+  place-items: center;
+}
+
+.login-panel {
+  width: min(430px, 100%);
+  padding: 42px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 28px;
+  box-shadow: 0 18px 50px rgba(49, 56, 91, 0.09);
+  backdrop-filter: blur(18px);
+}
+
+.login-panel-icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 26px;
+  color: #6555bd;
+  place-items: center;
+  background: #eeeafd;
+  border-radius: 15px;
+}
+
+.login-panel-icon svg { width: 20px; }
+.login-panel-kicker { color: #8d80ca; }
+.login-panel h2 { margin: 10px 0 6px; color: #1d2538; font-size: 30px; letter-spacing: -0.03em; }
+.login-panel > p { margin: 0; color: #959eae; font-size: 13px; }
+
+.login-form { margin-top: 30px; }
+.login-form label { display: block; margin: 18px 0 8px; color: #596376; font-weight: 600; font-size: 12px; }
+.login-form .el-input__wrapper { min-height: 48px; padding: 1px 15px; background: #f8f9fc; }
+.login-submit { width: 100%; min-height: 50px; margin-top: 26px; border-radius: 14px; }
+
+.login-security {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 22px;
+  color: #a1a9b7;
+  font-size: 10px;
+}
+
+.login-security span { width: 6px; height: 6px; background: #67c99a; border-radius: 50%; }
+.login-copyright { align-self: end; margin: -22px 0 0; color: #a0a8b6; font-size: 10px; }
+
 @media (max-width: 1180px) {
   .metric-grid,
   .integration-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -494,7 +685,12 @@ body { background: #f1f5fb; }
   .app-sidebar { display: none; }
   .app-header { padding: 20px 18px 12px; }
   .app-main { padding: 12px 16px 24px; }
-  .admin-chip { display: none; }
+  .admin-chip { padding: 7px; border-radius: 13px; }
+  .admin-chip > div,
+  .admin-chip .logout-icon { display: none; }
+  .login-page { grid-template-columns: 1fr; padding: 14px; }
+  .login-showcase { display: none; }
+  .login-panel-wrap { min-height: calc(100vh - 28px); padding: 20px; }
 }
 
 @media (max-width: 600px) {
@@ -505,4 +701,5 @@ body { background: #f1f5fb; }
   .filters { width: 100%; flex-wrap: wrap; }
   .chat-list { height: calc(100vh - 240px); padding: 14px; }
   .bubble { max-width: 92%; }
+  .login-panel { padding: 30px 24px; border-radius: 24px; }
 }

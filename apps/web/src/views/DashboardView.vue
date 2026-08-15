@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ChatDotRound, CircleCheck, Document, Warning } from '@element-plus/icons-vue'
 import { computed, onMounted, ref } from 'vue'
 
 import { listMessages, type MessageLog } from '@/api/admin'
@@ -37,25 +38,25 @@ onMounted(async () => {
   <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" />
   <section class="metric-grid" v-loading="loading">
     <article class="metric-card metric-card-blue">
-      <div class="metric-card-top"><span class="metric-icon">文</span><span class="metric-badge">KNOWLEDGE</span></div>
+      <div class="metric-card-top"><span class="metric-icon"><el-icon><Document /></el-icon></span><span class="metric-badge">KNOWLEDGE</span></div>
       <div class="metric">{{ documents.length }}</div>
       <div class="metric-title">知识库文档</div>
       <p class="metric-note"><span class="mini-dot"></span>{{ documents.filter((item) => item.status === 'indexed').length }} 份已完成索引</p>
     </article>
     <article class="metric-card metric-card-violet">
-      <div class="metric-card-top"><span class="metric-icon">问</span><span class="metric-badge">TODAY</span></div>
+      <div class="metric-card-top"><span class="metric-icon"><el-icon><ChatDotRound /></el-icon></span><span class="metric-badge">TODAY</span></div>
       <div class="metric">{{ todayCount }}</div>
       <div class="metric-title">今日提问</div>
       <p class="metric-note"><span class="mini-dot"></span>Web 与钉钉统一统计</p>
     </article>
     <article class="metric-card metric-card-orange">
-      <div class="metric-card-top"><span class="metric-icon">!</span><span class="metric-badge">ALERT</span></div>
+      <div class="metric-card-top"><span class="metric-icon"><el-icon><Warning /></el-icon></span><span class="metric-badge">ALERT</span></div>
       <div class="metric">{{ failedCount }}</div>
       <div class="metric-title">失败回答</div>
       <p class="metric-note"><span class="mini-dot"></span>可在对话日志中定位</p>
     </article>
     <article class="metric-card metric-card-green">
-      <div class="metric-card-top"><span class="metric-icon">✓</span><span class="metric-badge">HEALTHY</span></div>
+      <div class="metric-card-top"><span class="metric-icon"><el-icon><CircleCheck /></el-icon></span><span class="metric-badge">HEALTHY</span></div>
       <div class="metric metric-status">{{ health?.status === 'ok' ? '在线' : '离线' }}</div>
       <div class="metric-title">系统状态</div>
       <p class="metric-note"><span class="mini-dot"></span>数据库 {{ health?.database ?? '检查中' }}</p>

@@ -1,7 +1,10 @@
 export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`/api/v1${path}`, init)
+  const response = await fetch(`/api/v1${path}`, { credentials: 'same-origin', ...init })
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as { detail?: string } | null
+    if (response.status === 401 && !path.startsWith('/auth/')) {
+      window.dispatchEvent(new Event('xiaosu:unauthorized'))
+    }
     throw new Error(body?.detail ?? `请求失败（${response.status}）`)
   }
   if (response.status === 204) return undefined as T

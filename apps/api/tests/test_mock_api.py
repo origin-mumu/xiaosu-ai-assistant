@@ -1,11 +1,36 @@
-from httpx import ASGITransport, AsyncClient
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
+from httpx import ASGITransport, AsyncClient
+from pydantic import SecretStr
+
+from xiaosu.core.config import Settings, get_settings
 from xiaosu.main import app
 
 
-async def test_get_employee_returns_expected_department() -> None:
+@asynccontextmanager
+async def authenticated_client() -> AsyncIterator[AsyncClient]:
+    settings = Settings(
+        admin_username="admin",
+        admin_password=SecretStr("test-password"),
+        session_secret=SecretStr("test-session-secret"),
+    )
+    app.dependency_overrides[get_settings] = lambda: settings
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    try:
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            login = await client.post(
+                "/api/v1/auth/login",
+                json={"username": "admin", "password": "test-password"},
+            )
+            assert login.status_code == 200
+            yield client
+    finally:
+        app.dependency_overrides.clear()
+
+
+async def test_get_employee_returns_expected_department() -> None:
+    async with authenticated_client() as client:
         response = await client.get("/api/v1/mock/employees/001")
 
     assert response.status_code == 200
@@ -19,8 +44,7 @@ async def test_get_employee_returns_expected_department() -> None:
 
 
 async def test_get_unknown_employee_returns_404() -> None:
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with authenticated_client() as client:
         response = await client.get("/api/v1/mock/employees/999")
 
     assert response.status_code == 404
@@ -28,13 +52,12 @@ async def test_get_unknown_employee_returns_404() -> None:
 
 
 async def test_attendance_summary_covers_leave_late_and_overtime() -> None:
-    transport = ASGITransport(app=app)
     params = {
         "employee_id": "001",
         "start_date": "2026-08-03",
         "end_date": "2026-08-09",
     }
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with authenticated_client() as client:
         response = await client.get("/api/v1/mock/attendance", params=params)
 
     assert response.status_code == 200
@@ -50,12 +73,11 @@ async def test_attendance_summary_covers_leave_late_and_overtime() -> None:
 
 
 async def test_order_summary_excludes_cancelled_and_subtracts_refunds() -> None:
-    transport = ASGITransport(app=app)
     params = {
         "start_date": "2026-08-03",
         "end_date": "2026-08-09",
     }
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with authenticated_client() as client:
         response = await client.get("/api/v1/mock/orders", params=params)
 
     assert response.status_code == 200
@@ -69,12 +91,11 @@ async def test_order_summary_excludes_cancelled_and_subtracts_refunds() -> None:
 
 
 async def test_invalid_date_range_returns_422() -> None:
-    transport = ASGITransport(app=app)
     params = {
         "start_date": "2026-08-10",
         "end_date": "2026-08-03",
     }
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with authenticated_client() as client:
         response = await client.get("/api/v1/mock/orders", params=params)
 
     assert response.status_code == 422

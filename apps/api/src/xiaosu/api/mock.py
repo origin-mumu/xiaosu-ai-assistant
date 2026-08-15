@@ -1,12 +1,17 @@
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from xiaosu.api.auth import require_admin
 from xiaosu.mock.models import AttendanceQueryResult, Employee, OrdersQueryResult
 from xiaosu.mock.service import InvalidDateRangeError, mock_internal_system
 
-router = APIRouter(prefix="/mock", tags=["mock internal systems"])
+router = APIRouter(
+    prefix="/mock",
+    tags=["mock internal systems"],
+    dependencies=[Depends(require_admin)],
+)
 
 
 @router.get("/employees/{employee_id}", response_model=Employee)

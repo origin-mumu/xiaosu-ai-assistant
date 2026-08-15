@@ -2,6 +2,8 @@
 
 小苏是面向企业员工的内部 AI 助手。员工可以在钉钉群聊或私聊中查询公司制度、员工、考勤、订单和当前时间；管理员通过 Vue Web 后台维护知识库、定位引用原文、查看工具调用与 Token 日志，并使用调试聊天页现场演示。
 
+![管理员登录](docs/screenshots/login.png)
+
 ![系统概览](docs/screenshots/dashboard.png)
 
 ![文档管理](docs/screenshots/documents.png)
@@ -17,8 +19,9 @@
 - SSE 增量输出，Nginx 关闭缓冲；模型异常和无效 Key 均有友好兜底。
 - 钉钉 Stream 长连接机器人，无需公网回调地址。
 - 管理后台包含概览、文档、原文定位、对话日志、模型设置和调试聊天。
+- 管理后台使用签名 HttpOnly Cookie 会话，未登录无法访问文档、对话、设置和 Mock API。
 - 结构化文件日志、请求 ID、依赖健康检查、Token/成本/耗时记录。
-- 16 条离线测试（含 Mock LLM）和 20 条真实链路 Evals。
+- 18 条离线测试（含登录会话与 Mock LLM）和 20 条真实链路 Evals。
 
 ## 架构
 
@@ -76,9 +79,12 @@ cp .env.example .env
 
 ```dotenv
 DASHSCOPE_API_KEY=你的百炼API-Key
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=请设置管理员密码
+SESSION_SECRET=请设置一段足够长的随机字符串
 ```
 
-对话与 Embedding 共用这一把 Key。`.env` 已被 Git 忽略，禁止使用 `git add -f`。模型和地域配置参见 [千问模型配置](docs/model-configuration.md)。
+若旧环境只填写了 `ADMIN_TOKEN`，系统会暂时将它同时用作登录密码和会话签名密钥。新部署建议分别配置 `ADMIN_PASSWORD` 与 `SESSION_SECRET`。对话与 Embedding 共用同一把百炼 Key。`.env` 已被 Git 忽略，禁止使用 `git add -f`。模型和地域配置参见 [千问模型配置](docs/model-configuration.md)。
 
 ### 2. 一条命令启动
 
@@ -99,6 +105,8 @@ docker compose up --build
 - 健康检查：<http://localhost:8000/api/v1/health/dependencies>
 
 Windows 建议使用 WSL/Git Bash 执行脚本；也可在 PowerShell 中运行 `docker compose up --build`。Docker Desktop 如果无法处理含中文的项目路径，请将仓库放到纯英文目录。
+
+首次进入管理后台会跳转登录页。用户名来自 `ADMIN_USERNAME`，密码来自 `ADMIN_PASSWORD`；兼容模式下密码为 `ADMIN_TOKEN`。
 
 ### 3. 导入演示文档
 
@@ -166,6 +174,9 @@ pnpm --filter @xiaosu/web dev
 
 | 方法 | 地址 | 说明 |
 |---|---|---|
+| POST | `/api/v1/auth/login` | 管理员登录并写入 HttpOnly Cookie |
+| GET | `/api/v1/auth/me` | 检查当前登录会话 |
+| POST | `/api/v1/auth/logout` | 退出并清除会话 |
 | POST | `/api/v1/documents` | 上传并索引文档 |
 | GET | `/api/v1/documents` | 文档与索引状态列表 |
 | DELETE | `/api/v1/documents/{id}` | 删除文档和向量 |
@@ -192,17 +203,19 @@ pnpm --filter @xiaosu/web dev
 ## 安全与运行数据
 
 - 所有密钥只从 `.env` 或部署平台 Secret 读取，健康与设置接口只返回“是否配置”。
+- 管理端 API 默认要求签名 HttpOnly Cookie；会话默认 8 小时过期，生产环境 Cookie 自动启用 Secure。
 - 上传文件使用随机存储名，限制 20 MB，仅接受 md/txt/pdf/docx。
 - 模型温度为 0.1，网络调用带超时与指数重试。
 - `logs/app.jsonl` 为轮转 JSON 日志；`uploads/`、`logs/`、`.env` 均不提交。
-- 当前管理后台未实现身份认证，公开部署前必须接入公司 SSO 或反向代理鉴权。
+- 当前实现单管理员登录，公开部署时仍建议接入公司 SSO、限流与角色权限。
 
 ## Roadmap
 
 - [x] 文档增量索引、引用定位和强制拒答
 - [x] Agent 自主 Function Calling 与多轮上下文
 - [x] 钉钉 Stream、Web 管理后台、Token/成本展示
+- [x] 管理后台登录、签名 Cookie 与受保护 API
 - [x] Mock LLM 测试和 20 条 Evals
-- [ ] 管理后台 SSO 与角色权限
+- [ ] 企业 SSO 与细粒度角色权限
 - [ ] 模型原生 Token 流与交互式钉钉卡片
 - [ ] Alembic 生产迁移和 OpenTelemetry/Langfuse 链路

@@ -1,8 +1,8 @@
-from xiaosu.core.config import get_settings
+from xiaosu.core.config import Settings
 
 
 def test_qwen_models_are_the_safe_defaults() -> None:
-    settings = get_settings()
+    settings = Settings(_env_file=None)
 
     assert settings.llm_provider == "dashscope"
     assert settings.llm_model == "qwen3.7-plus"
@@ -12,7 +12,6 @@ def test_qwen_models_are_the_safe_defaults() -> None:
 
 
 def test_dashscope_key_is_not_required_for_mock_development() -> None:
-    settings = get_settings()
+    settings = Settings(_env_file=None)
 
-    if settings.dashscope_api_key is not None:
-        assert settings.dashscope_api_key.get_secret_value() == ""
+    assert settings.dashscope_api_key is None

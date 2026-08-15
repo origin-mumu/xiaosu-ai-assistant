@@ -9,10 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from xiaosu.agent.schemas import ChatRequest, ChatResponse
 from xiaosu.agent.service import ChatService
+from xiaosu.api.auth import require_admin
 from xiaosu.core.config import Settings, get_settings
 from xiaosu.db.session import get_session
 
-router = APIRouter(prefix="/chat", tags=["chat"])
+router = APIRouter(prefix="/chat", tags=["chat"], dependencies=[Depends(require_admin)])
 SessionDependency = Annotated[AsyncSession, Depends(get_session)]
 SettingsDependency = Annotated[Settings, Depends(get_settings)]
 
