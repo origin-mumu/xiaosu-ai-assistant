@@ -35,19 +35,45 @@ onMounted(async () => {
 
 <template>
   <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" />
-  <el-row :gutter="20" v-loading="loading">
-    <el-col :xs="24" :md="12" :xl="6"><el-card shadow="never"><template #header>知识库文档</template><div class="metric">{{ documents.length }}</div><p class="metric-note">{{ documents.filter((item) => item.status === 'indexed').length }} 份已完成索引</p></el-card></el-col>
-    <el-col :xs="24" :md="12" :xl="6"><el-card shadow="never"><template #header>今日提问</template><div class="metric">{{ todayCount }}</div><p class="metric-note">Web 与钉钉统一统计</p></el-card></el-col>
-    <el-col :xs="24" :md="12" :xl="6"><el-card shadow="never"><template #header>失败回答</template><div class="metric">{{ failedCount }}</div><p class="metric-note">可在对话日志定位</p></el-card></el-col>
-    <el-col :xs="24" :md="12" :xl="6"><el-card shadow="never"><template #header>系统状态</template><div class="metric metric-status">{{ health?.status === 'ok' ? '在线' : '离线' }}</div><p class="metric-note">数据库 {{ health?.database ?? '检查中' }}</p></el-card></el-col>
-  </el-row>
-  <el-card shadow="never" class="section-card">
-    <template #header>接入检查</template>
-    <el-descriptions :column="2" border>
-      <el-descriptions-item label="对话模型">{{ health?.llm_model ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="向量模型">{{ health?.embedding_model ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="向量维度">{{ health?.embedding_dimension ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="API Key"><el-tag :type="health?.model_api_key_configured ? 'success' : 'warning'">{{ health?.model_api_key_configured ? '已配置' : '待填写' }}</el-tag></el-descriptions-item>
-    </el-descriptions>
+  <section class="metric-grid" v-loading="loading">
+    <article class="metric-card metric-card-blue">
+      <div class="metric-card-top"><span class="metric-icon">文</span><span class="metric-badge">KNOWLEDGE</span></div>
+      <div class="metric">{{ documents.length }}</div>
+      <div class="metric-title">知识库文档</div>
+      <p class="metric-note"><span class="mini-dot"></span>{{ documents.filter((item) => item.status === 'indexed').length }} 份已完成索引</p>
+    </article>
+    <article class="metric-card metric-card-violet">
+      <div class="metric-card-top"><span class="metric-icon">问</span><span class="metric-badge">TODAY</span></div>
+      <div class="metric">{{ todayCount }}</div>
+      <div class="metric-title">今日提问</div>
+      <p class="metric-note"><span class="mini-dot"></span>Web 与钉钉统一统计</p>
+    </article>
+    <article class="metric-card metric-card-orange">
+      <div class="metric-card-top"><span class="metric-icon">!</span><span class="metric-badge">ALERT</span></div>
+      <div class="metric">{{ failedCount }}</div>
+      <div class="metric-title">失败回答</div>
+      <p class="metric-note"><span class="mini-dot"></span>可在对话日志中定位</p>
+    </article>
+    <article class="metric-card metric-card-green">
+      <div class="metric-card-top"><span class="metric-icon">✓</span><span class="metric-badge">HEALTHY</span></div>
+      <div class="metric metric-status">{{ health?.status === 'ok' ? '在线' : '离线' }}</div>
+      <div class="metric-title">系统状态</div>
+      <p class="metric-note"><span class="mini-dot"></span>数据库 {{ health?.database ?? '检查中' }}</p>
+    </article>
+  </section>
+
+  <el-card shadow="never" class="section-card integration-card">
+    <template #header>
+      <div class="card-heading">
+        <div><strong>接入检查</strong><p>模型、向量服务与凭证的实时配置状态</p></div>
+        <span class="health-pill"><i></i>运行正常</span>
+      </div>
+    </template>
+    <div class="integration-grid">
+      <div class="integration-item"><span>对话模型</span><strong>{{ health?.llm_model ?? '-' }}</strong><small>LLM</small></div>
+      <div class="integration-item"><span>向量模型</span><strong>{{ health?.embedding_model ?? '-' }}</strong><small>EMBEDDING</small></div>
+      <div class="integration-item"><span>向量维度</span><strong>{{ health?.embedding_dimension ?? '-' }}</strong><small>DIMENSION</small></div>
+      <div class="integration-item"><span>API Key</span><strong>{{ health?.model_api_key_configured ? '已配置' : '待填写' }}</strong><small>{{ health?.model_api_key_configured ? 'READY' : 'ACTION NEEDED' }}</small></div>
+    </div>
   </el-card>
 </template>
