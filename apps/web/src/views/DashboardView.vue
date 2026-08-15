@@ -1,19 +1,32 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
-import { fetchHealth, type HealthResponse } from '@/api/health'
+import { listMessages, type MessageLog } from '@/api/admin'
+import { listDocuments, type DocumentItem } from '@/api/documents'
+import { fetchDependencyHealth, type DependencyHealth } from '@/api/health'
 
-const health = ref<HealthResponse | null>(null)
+const documents = ref<DocumentItem[]>([])
+const messages = ref<MessageLog[]>([])
+const health = ref<DependencyHealth | null>(null)
 const loading = ref(true)
 const errorMessage = ref('')
-
-const serviceOnline = computed(() => health.value?.status === 'ok')
+const todayCount = computed(() => {
+  const today = new Date().toDateString()
+  return messages.value.filter(
+    (item) => item.role === 'user' && new Date(item.created_at).toDateString() === today,
+  ).length
+})
+const failedCount = computed(() => messages.value.filter((item) => item.status === 'failed').length)
 
 onMounted(async () => {
   try {
-    health.value = await fetchHealth()
+    ;[documents.value, messages.value, health.value] = await Promise.all([
+      listDocuments(),
+      listMessages(),
+      fetchDependencyHealth(),
+    ])
   } catch (error: unknown) {
-    errorMessage.value = error instanceof Error ? error.message : '未知错误'
+    errorMessage.value = error instanceof Error ? error.message : '加载失败'
   } finally {
     loading.value = false
   }
@@ -21,69 +34,20 @@ onMounted(async () => {
 </script>
 
 <template>
-  <el-container class="app-shell">
-    <el-aside width="232px" class="app-sidebar">
-      <div class="brand">
-        <span class="brand-mark">苏</span>
-        <div>
-          <strong>小苏</strong>
-          <small>企业智能助手</small>
-        </div>
-      </div>
-
-      <el-menu default-active="/dashboard" router>
-        <el-menu-item index="/dashboard">系统概览</el-menu-item>
-        <el-menu-item index="/documents" disabled>文档管理</el-menu-item>
-        <el-menu-item index="/conversations" disabled>对话日志</el-menu-item>
-        <el-menu-item index="/settings" disabled>系统设置</el-menu-item>
-      </el-menu>
-    </el-aside>
-
-    <el-container>
-      <el-header class="app-header">
-        <div>
-          <h1>系统概览</h1>
-          <p>小苏企业智能助手管理后台</p>
-        </div>
-        <el-tag :type="serviceOnline ? 'success' : 'danger'" effect="light">
-          {{ serviceOnline ? 'API 正常' : 'API 未连接' }}
-        </el-tag>
-      </el-header>
-
-      <el-main class="app-main">
-        <el-alert
-          v-if="errorMessage"
-          :title="errorMessage"
-          type="error"
-          show-icon
-          :closable="false"
-        />
-
-        <el-row :gutter="20" v-loading="loading">
-          <el-col :xs="24" :md="8">
-            <el-card shadow="never">
-              <template #header>知识库文档</template>
-              <div class="metric">0</div>
-              <p class="metric-note">等待上传首份文档</p>
-            </el-card>
-          </el-col>
-          <el-col :xs="24" :md="8">
-            <el-card shadow="never">
-              <template #header>今日对话</template>
-              <div class="metric">0</div>
-              <p class="metric-note">钉钉接入后开始统计</p>
-            </el-card>
-          </el-col>
-          <el-col :xs="24" :md="8">
-            <el-card shadow="never">
-              <template #header>服务状态</template>
-              <div class="metric metric-status">{{ serviceOnline ? '在线' : '离线' }}</div>
-              <p class="metric-note">{{ health?.service ?? 'xiaosu-api' }}</p>
-            </el-card>
-          </el-col>
-        </el-row>
-      </el-main>
-    </el-container>
-  </el-container>
+  <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" />
+  <el-row :gutter="20" v-loading="loading">
+    <el-col :xs="24" :md="6"><el-card shadow="never"><template #header>知识库文档</template><div class="metric">{{ documents.length }}</div><p class="metric-note">{{ documents.filter((item) => item.status === 'indexed').length }} 份已完成索引</p></el-card></el-col>
+    <el-col :xs="24" :md="6"><el-card shadow="never"><template #header>今日提问</template><div class="metric">{{ todayCount }}</div><p class="metric-note">Web 与钉钉统一统计</p></el-card></el-col>
+    <el-col :xs="24" :md="6"><el-card shadow="never"><template #header>失败回答</template><div class="metric">{{ failedCount }}</div><p class="metric-note">可在对话日志定位</p></el-card></el-col>
+    <el-col :xs="24" :md="6"><el-card shadow="never"><template #header>系统状态</template><div class="metric metric-status">{{ health?.status === 'ok' ? '在线' : '离线' }}</div><p class="metric-note">数据库 {{ health?.database ?? '检查中' }}</p></el-card></el-col>
+  </el-row>
+  <el-card shadow="never" class="section-card">
+    <template #header>接入检查</template>
+    <el-descriptions :column="2" border>
+      <el-descriptions-item label="对话模型">{{ health?.llm_model ?? '-' }}</el-descriptions-item>
+      <el-descriptions-item label="向量模型">{{ health?.embedding_model ?? '-' }}</el-descriptions-item>
+      <el-descriptions-item label="向量维度">{{ health?.embedding_dimension ?? '-' }}</el-descriptions-item>
+      <el-descriptions-item label="API Key"><el-tag :type="health?.model_api_key_configured ? 'success' : 'warning'">{{ health?.model_api_key_configured ? '已配置' : '待填写' }}</el-tag></el-descriptions-item>
+    </el-descriptions>
+  </el-card>
 </template>
-

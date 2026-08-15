@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +12,10 @@ from xiaosu.db.session import get_session
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 SessionDependency = Annotated[AsyncSession, Depends(get_session)]
+
+
+class SettingsUpdate(BaseModel):
+    llm_model: str = Field(min_length=2, max_length=100, pattern=r"^[a-zA-Z0-9._-]+$")
 
 
 @router.get("/messages", response_model=list[MessageLogResponse])
@@ -69,3 +74,12 @@ async def settings_status(
         "retrieval_top_k": settings.retrieval_top_k,
         "retrieval_min_score": settings.retrieval_min_score,
     }
+
+
+@router.patch("/settings")
+async def update_settings(
+    request: SettingsUpdate,
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> dict[str, str]:
+    settings.llm_model = request.llm_model
+    return {"llm_model": settings.llm_model, "persistence": "until_process_restart"}

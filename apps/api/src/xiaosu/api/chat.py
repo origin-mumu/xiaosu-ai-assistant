@@ -42,4 +42,8 @@ async def stream_chat(
         completed = {"type": "done", "data": result.model_dump(mode="json")}
         yield f"data: {json.dumps(completed, ensure_ascii=False)}\n\n"
 
-    return StreamingResponse(events(), media_type="text/event-stream")
+    return StreamingResponse(
+        events(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )

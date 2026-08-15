@@ -120,7 +120,7 @@ class DocumentService:
                     )
                 )
             document.chunk_count = len(chunks)
-            document.status = "ready"
+            document.status = "indexed"
             await self.session.commit()
         except Exception as error:
             await self.session.rollback()
@@ -164,7 +164,7 @@ class DocumentService:
             select(DocumentChunk, Document, distance.label("distance"))
             .join(Document)
             .options(joinedload(DocumentChunk.document))
-            .where(Document.status == "ready")
+            .where(Document.status == "indexed")
             .order_by(distance)
             .limit(min(max(limit, 1), 20))
         )
