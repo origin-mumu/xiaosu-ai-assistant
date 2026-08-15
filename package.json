@@ -1,0 +1,15 @@
+{
+  "name": "xiaosu-ai-assistant",
+  "private": true,
+  "packageManager": "pnpm@10.33.1",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
+  "scripts": {
+    "dev": "pnpm --filter @xiaosu/web dev",
+    "build": "pnpm --filter @xiaosu/web build",
+    "typecheck": "pnpm --filter @xiaosu/web typecheck"
+  }
+}

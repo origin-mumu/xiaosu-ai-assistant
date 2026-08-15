@@ -1,0 +1,39 @@
+[project]
+name = "xiaosu-api"
+version = "0.1.0"
+description = "Backend service for Xiaosu enterprise AI assistant"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "asyncpg>=0.30.0",
+    "fastapi>=0.116.0",
+    "pydantic-settings>=2.10.0",
+    "sqlalchemy[asyncio]>=2.0.40",
+    "uvicorn[standard]>=0.35.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.0",
+    "pytest>=8.4.0",
+    "pytest-asyncio>=1.1.0",
+    "ruff>=0.12.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/xiaosu"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+

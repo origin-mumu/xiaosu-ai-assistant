@@ -1,0 +1,35 @@
+# Local task materials
+/招聘笔试题.html
+/开发方案.md
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+dist/
+.pnpm-store/
+
+# Runtime data
+logs/*
+!logs/.gitkeep
+uploads/*
+!uploads/.gitkeep
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
