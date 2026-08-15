@@ -18,6 +18,7 @@
 - Web：Vue 3、TypeScript、Vite、Element Plus、Pinia
 - API：FastAPI、Pydantic、SQLAlchemy
 - Database：PostgreSQL、pgvector
+- Models：Qwen3.7 Plus、Qwen3.7 Text Embedding
 - Tooling：pnpm、uv、pytest、Ruff、Docker Compose
 - IM：钉钉 Stream 机器人
 
@@ -27,6 +28,9 @@
 2. 执行 ./scripts/start.sh。
 3. 打开 http://localhost:5173。
 4. 后端接口文档位于 http://localhost:8000/docs。
+
+模型配置参见 [千问模型配置](docs/model-configuration.md)。对话与 Embedding 共用本地
+`DASHSCOPE_API_KEY`，真实密钥不得提交到仓库。
 
 ## 本地开发
 
