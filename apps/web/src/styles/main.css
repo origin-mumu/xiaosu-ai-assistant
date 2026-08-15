@@ -28,6 +28,10 @@ body {
   min-height: 100vh;
 }
 
+.app-shell > .el-container {
+  min-width: 0;
+}
+
 .app-sidebar {
   background: #ffffff;
   border-right: 1px solid #e8ebf2;
@@ -91,6 +95,11 @@ body {
 .app-main {
   padding: 28px;
   overflow-x: hidden;
+  min-width: 0;
+}
+
+.el-descriptions__content {
+  overflow-wrap: anywhere;
 }
 
 .metric {

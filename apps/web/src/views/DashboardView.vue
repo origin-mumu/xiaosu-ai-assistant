@@ -36,10 +36,10 @@ onMounted(async () => {
 <template>
   <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" />
   <el-row :gutter="20" v-loading="loading">
-    <el-col :xs="24" :md="6"><el-card shadow="never"><template #header>知识库文档</template><div class="metric">{{ documents.length }}</div><p class="metric-note">{{ documents.filter((item) => item.status === 'indexed').length }} 份已完成索引</p></el-card></el-col>
-    <el-col :xs="24" :md="6"><el-card shadow="never"><template #header>今日提问</template><div class="metric">{{ todayCount }}</div><p class="metric-note">Web 与钉钉统一统计</p></el-card></el-col>
-    <el-col :xs="24" :md="6"><el-card shadow="never"><template #header>失败回答</template><div class="metric">{{ failedCount }}</div><p class="metric-note">可在对话日志定位</p></el-card></el-col>
-    <el-col :xs="24" :md="6"><el-card shadow="never"><template #header>系统状态</template><div class="metric metric-status">{{ health?.status === 'ok' ? '在线' : '离线' }}</div><p class="metric-note">数据库 {{ health?.database ?? '检查中' }}</p></el-card></el-col>
+    <el-col :xs="24" :md="12" :xl="6"><el-card shadow="never"><template #header>知识库文档</template><div class="metric">{{ documents.length }}</div><p class="metric-note">{{ documents.filter((item) => item.status === 'indexed').length }} 份已完成索引</p></el-card></el-col>
+    <el-col :xs="24" :md="12" :xl="6"><el-card shadow="never"><template #header>今日提问</template><div class="metric">{{ todayCount }}</div><p class="metric-note">Web 与钉钉统一统计</p></el-card></el-col>
+    <el-col :xs="24" :md="12" :xl="6"><el-card shadow="never"><template #header>失败回答</template><div class="metric">{{ failedCount }}</div><p class="metric-note">可在对话日志定位</p></el-card></el-col>
+    <el-col :xs="24" :md="12" :xl="6"><el-card shadow="never"><template #header>系统状态</template><div class="metric metric-status">{{ health?.status === 'ok' ? '在线' : '离线' }}</div><p class="metric-note">数据库 {{ health?.database ?? '检查中' }}</p></el-card></el-col>
   </el-row>
   <el-card shadow="never" class="section-card">
     <template #header>接入检查</template>

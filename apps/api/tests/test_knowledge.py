@@ -1,5 +1,6 @@
 from io import BytesIO
 
+import pymupdf
 from docx import Document
 
 from xiaosu.knowledge.chunker import chunk_segments
@@ -35,3 +36,16 @@ def test_chunker_splits_long_text_with_overlap() -> None:
 
     assert len(chunks) > 1
     assert chunks[0].content[-10:] == chunks[1].content[:10]
+
+
+def test_pdf_parser_preserves_page_number() -> None:
+    document = pymupdf.open()
+    page = document.new_page()
+    page.insert_text((72, 72), "Expense policy requires a valid invoice.")
+    content = document.tobytes()
+    document.close()
+
+    segments = parse_document("policy.pdf", content)
+
+    assert segments[0].page_number == 1
+    assert "valid invoice" in segments[0].text

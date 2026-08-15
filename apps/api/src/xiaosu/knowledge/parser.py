@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 
-import fitz
+import pymupdf as fitz
 from docx import Document as WordDocument
 
 
