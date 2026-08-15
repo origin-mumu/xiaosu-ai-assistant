@@ -24,12 +24,20 @@ class Settings(BaseSettings):
     chunk_size: int = 700
     chunk_overlap: int = 100
     retrieval_top_k: int = 5
+    retrieval_min_score: float = 0.35
     llm_provider: Literal["dashscope"] = "dashscope"
     dashscope_api_key: SecretStr | None = None
     dashscope_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
     llm_model: str = "qwen3.7-plus"
     embedding_model: str = "qwen3.7-text-embedding"
     embedding_dimension: int = 1024
+    agent_max_steps: int = 5
+    model_timeout_seconds: float = 30
+    input_price_per_million: float = 0.8
+    output_price_per_million: float = 2.0
+    dingtalk_client_id: SecretStr | None = None
+    dingtalk_client_secret: SecretStr | None = None
+    dingtalk_robot_code: str | None = None
 
     @field_validator("embedding_dimension")
     @classmethod

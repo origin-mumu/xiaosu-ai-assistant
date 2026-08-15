@@ -4,6 +4,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from xiaosu.api.admin import router as admin_router
+from xiaosu.api.chat import router as chat_router
 from xiaosu.api.documents import router as documents_router
 from xiaosu.api.health import router as health_router
 from xiaosu.api.mock import router as mock_router
@@ -40,6 +42,8 @@ def create_app() -> FastAPI:
     )
     app.include_router(health_router, prefix="/api/v1")
     app.include_router(documents_router, prefix="/api/v1")
+    app.include_router(chat_router, prefix="/api/v1")
+    app.include_router(admin_router, prefix="/api/v1")
     app.include_router(mock_router, prefix="/api/v1")
     return app
 
