@@ -515,6 +515,38 @@ body { background: #f1f5fb; }
   box-shadow: 0 8px 18px rgba(79, 110, 247, 0.17);
 }
 
+.chat-message.assistant .bubble {
+  width: min(900px, 92%);
+  max-width: min(900px, 92%);
+  padding: 0;
+  color: #27324a;
+  background: transparent;
+  border-radius: 0;
+}
+
+.answer-copy {
+  max-width: 820px;
+  color: #283348;
+  font-size: 15px;
+  line-height: 1.85;
+  white-space: pre-wrap;
+}
+
+.stream-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.05em;
+  margin-left: 3px;
+  vertical-align: -0.14em;
+  background: #5d72eb;
+  border-radius: 999px;
+  animation: caret-blink 0.8s steps(2, start) infinite;
+}
+
+@keyframes caret-blink {
+  50% { opacity: 0; }
+}
+
 .answer-meta {
   display: flex;
   flex-wrap: wrap;
@@ -523,44 +555,93 @@ body { background: #f1f5fb; }
   margin-top: 10px;
   color: #8490a5;
   font-size: 12px;
-  border-top: 1px solid #dfe4ec;
+  border-top: 1px solid #e8ebf3;
 }
 
 .answer-progress {
+  width: min(520px, 100%);
+  padding: 2px 0 18px;
+  margin-bottom: 4px;
+}
+
+.progress-heading {
   display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  padding-bottom: 10px;
-  margin-bottom: 10px;
-  border-bottom: 1px solid #e1e6ee;
-}
-
-.answer-progress span {
-  display: inline-flex;
-  gap: 6px;
+  gap: 9px;
   align-items: center;
-  padding: 4px 8px;
-  color: #69758a;
-  font-size: 11px;
-  line-height: 1.2;
-  background: #fff;
-  border: 1px solid #e5e9f1;
-  border-radius: 999px;
+  color: #404c65;
+  font-size: 13px;
 }
 
-.answer-progress i {
-  width: 6px;
-  height: 6px;
-  background: #6a7ff0;
+.progress-heading-icon {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  color: #4d66e9;
+  place-items: center;
+  background: #eef1ff;
+  border-radius: 9px;
+}
+
+.progress-heading-icon.active .el-icon { animation: progress-rotate 1.1s linear infinite; }
+.progress-heading-icon:not(.active) { color: #3ba97a; background: #edf8f3; }
+
+.answer-progress ol {
+  padding: 0;
+  margin: 13px 0 0 12px;
+  list-style: none;
+}
+
+.answer-progress li {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  min-height: 34px;
+  color: #929cad;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.answer-progress li:not(:last-child)::after {
+  position: absolute;
+  top: 18px;
+  bottom: -2px;
+  left: 6px;
+  width: 1px;
+  background: #e2e6ef;
+  content: "";
+}
+
+.answer-progress li.complete { color: #69758a; }
+.answer-progress li.active { color: #3e4a63; font-weight: 600; }
+
+.progress-marker {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  flex: 0 0 auto;
+  width: 13px;
+  height: 20px;
+  color: #48ad81;
+  font-size: 11px;
+  place-items: center;
+  background: #fff;
+}
+
+.progress-marker i {
+  width: 7px;
+  height: 7px;
+  background: #6178ee;
   border-radius: 50%;
-  box-shadow: 0 0 0 3px rgba(106, 127, 240, 0.12);
+  box-shadow: 0 0 0 4px rgba(97, 120, 238, 0.12);
   animation: progress-pulse 1.1s ease-in-out infinite;
 }
 
-.answer-progress span.complete i { background: #43b982; box-shadow: none; animation: none; }
-
 @keyframes progress-pulse {
   50% { opacity: 0.45; transform: scale(0.7); }
+}
+
+@keyframes progress-rotate {
+  to { transform: rotate(360deg); }
 }
 
 .citation-list { display: grid; gap: 7px; margin-top: 10px; }
@@ -632,27 +713,32 @@ body { background: #f1f5fb; }
   padding: 34px 42px;
   overflow: hidden;
   flex-direction: column;
-  color: #fff;
+  isolation: isolate;
+  color: #1d2538;
   background:
-    linear-gradient(145deg, rgba(68, 59, 135, 0.96), rgba(97, 82, 170, 0.92)),
-    #55458f;
+    radial-gradient(circle at 77% 58%, rgba(175, 150, 255, 0.16), transparent 25%),
+    #fff;
+  border: 1px solid rgba(255, 255, 255, 0.96);
   border-radius: 32px;
-  box-shadow: 0 24px 70px rgba(63, 51, 118, 0.2);
+  box-shadow:
+    0 28px 76px rgba(75, 62, 139, 0.16),
+    0 0 90px rgba(137, 107, 237, 0.2);
 }
 
 .login-showcase::before,
 .login-showcase::after {
   position: absolute;
-  width: 360px;
-  height: 360px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: -1;
+  width: 420px;
+  height: 420px;
+  background: rgba(143, 110, 242, 0.24);
   border-radius: 50%;
+  filter: blur(72px);
   content: "";
 }
 
-.login-showcase::before { top: -160px; right: -100px; }
-.login-showcase::after { bottom: -210px; left: -130px; }
+.login-showcase::before { top: -220px; right: -90px; }
+.login-showcase::after { bottom: -250px; left: -150px; opacity: 0.64; }
 
 .login-brand {
   position: relative;
@@ -669,8 +755,9 @@ body { background: #f1f5fb; }
   height: 42px;
   object-fit: cover;
   background: #f4efff;
-  border: 2px solid rgba(255, 255, 255, 0.7);
+  border: 2px solid #fff;
   border-radius: 14px;
+  box-shadow: 0 10px 24px rgba(112, 84, 195, 0.18);
 }
 
 .login-hero {
@@ -686,7 +773,7 @@ body { background: #f1f5fb; }
   right: -38px;
   bottom: 0;
   width: min(310px, 44%);
-  filter: drop-shadow(0 22px 24px rgba(31, 23, 72, 0.24));
+  filter: drop-shadow(0 22px 25px rgba(106, 73, 186, 0.22));
 }
 
 .mascot-stage::before {
@@ -695,7 +782,7 @@ body { background: #f1f5fb; }
   bottom: 2%;
   left: 2%;
   height: 30%;
-  background: rgba(235, 226, 255, 0.25);
+  background: rgba(159, 124, 247, 0.28);
   border-radius: 50%;
   filter: blur(18px);
   content: "";
@@ -711,7 +798,7 @@ body { background: #f1f5fb; }
   letter-spacing: 0.2em;
 }
 
-.login-kicker { color: #d6cff5; }
+.login-kicker { color: #7969c5; }
 
 .login-hero h1 {
   max-width: 420px;
@@ -719,12 +806,13 @@ body { background: #f1f5fb; }
   font-size: clamp(38px, 4.3vw, 66px);
   line-height: 1.15;
   letter-spacing: -0.05em;
+  color: #1b2234;
 }
 
 .login-hero p {
   max-width: 370px;
   margin: 0;
-  color: rgba(255, 255, 255, 0.72);
+  color: #7c8699;
   font-size: 14px;
   line-height: 1.8;
 }
@@ -739,10 +827,10 @@ body { background: #f1f5fb; }
 
 .login-feature-row span {
   padding: 8px 12px;
-  color: rgba(255, 255, 255, 0.76);
+  color: #6759ad;
   font-size: 10px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(239, 235, 255, 0.76);
+  border: 1px solid rgba(128, 103, 202, 0.12);
   border-radius: 999px;
 }
 

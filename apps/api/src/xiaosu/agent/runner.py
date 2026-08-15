@@ -103,11 +103,20 @@ class AgentRunner:
 
         yield AgentStreamEvent(type="status", stage="understanding", label="正在理解问题")
         for step in range(self.max_steps):
+            generating_status_sent = False
             if step:
                 yield AgentStreamEvent(type="status", stage="generating", label="正在组织答案")
+                generating_status_sent = True
             turn: ModelTurn | None = None
             async for event in self.model.stream(messages, TOOL_DEFINITIONS):
                 if event.type == "content" and event.content:
+                    if not generating_status_sent:
+                        yield AgentStreamEvent(
+                            type="status",
+                            stage="generating",
+                            label="正在组织答案",
+                        )
+                        generating_status_sent = True
                     answer_parts.append(event.content)
                     yield AgentStreamEvent(type="delta", content=event.content)
                 elif event.type == "done":

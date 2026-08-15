@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { Promotion } from '@element-plus/icons-vue'
+import { Check, Loading, Promotion } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { nextTick, ref } from 'vue'
+import { nextTick, reactive, ref } from 'vue'
 
 import { streamChat, type ChatResult, type StreamEvent } from '@/api/chat'
 
@@ -16,22 +16,34 @@ interface DisplayMessage {
   content: string
   result?: ChatResult
   progress?: ProgressStep[]
+  streaming?: boolean
 }
 
 const input = ref('')
 const sending = ref(false)
 const messages = ref<DisplayMessage[]>([])
+const minimumProgressDuration = 240
 const conversationId = sessionStorage.getItem('xiaosu-conversation') ?? crypto.randomUUID()
 sessionStorage.setItem('xiaosu-conversation', conversationId)
+
+function wait(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds))
+}
 
 async function send(): Promise<void> {
   const content = input.value.trim()
   if (!content || sending.value) return
   input.value = ''
   messages.value.push({ role: 'user', content })
-  const assistant: DisplayMessage = { role: 'assistant', content: '', progress: [] }
+  const assistant = reactive<DisplayMessage>({
+    role: 'assistant',
+    content: '',
+    progress: [],
+    streaming: true,
+  })
   messages.value.push(assistant)
   sending.value = true
+  let progressStartedAt = 0
   try {
     assistant.result = await streamChat(
       {
@@ -42,38 +54,48 @@ async function send(): Promise<void> {
         user_id: 'admin',
         user_name: '管理员',
       },
-      (event: StreamEvent) => {
+      async (event: StreamEvent) => {
         if (event.type === 'status' && event.stage && event.label) {
           const previous = assistant.progress?.[assistant.progress.length - 1]
-          if (previous) previous.complete = true
-          if (!previous || previous.stage !== event.stage || previous.label !== event.label) {
+          const isNewStep =
+            !previous || previous.stage !== event.stage || previous.label !== event.label
+          if (previous && isNewStep) {
+            const remaining = minimumProgressDuration - (performance.now() - progressStartedAt)
+            if (remaining > 0) await wait(remaining)
+            previous.complete = true
+          }
+          if (isNewStep) {
             assistant.progress?.push({
               stage: event.stage,
               label: event.label,
               complete: false,
             })
+            progressStartedAt = performance.now()
           }
         }
         if (event.type === 'delta' && event.content) {
-          const current = assistant.progress?.[assistant.progress.length - 1]
-          if (current) current.complete = true
           assistant.content += event.content
         }
         if (event.type === 'done') {
           const current = assistant.progress?.[assistant.progress.length - 1]
-          if (current) current.complete = true
+          if (current) {
+            const remaining = minimumProgressDuration - (performance.now() - progressStartedAt)
+            if (remaining > 0) await wait(remaining)
+            current.complete = true
+          }
+          assistant.streaming = false
         }
-        void nextTick(() =>
-          document
-            .querySelector('.chat-list')
-            ?.scrollTo({ top: 999999, behavior: 'smooth' }),
-        )
+        await nextTick()
+        document.querySelector('.chat-list')?.scrollTo({ top: 999999, behavior: 'smooth' })
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
       },
     )
   } catch (error: unknown) {
     assistant.content = '请求失败，请检查后端。'
+    assistant.streaming = false
     ElMessage.error(error instanceof Error ? error.message : '聊天失败')
   } finally {
+    assistant.streaming = false
     sending.value = false
   }
 }
@@ -95,15 +117,29 @@ async function send(): Promise<void> {
       >
         <div class="bubble">
           <div v-if="message.role === 'assistant' && message.progress?.length" class="answer-progress">
-            <span
-              v-for="(step, stepIndex) in message.progress"
-              :key="`${step.stage}-${stepIndex}`"
-              :class="{ complete: step.complete }"
-            >
-              <i></i>{{ step.label }}
-            </span>
+            <div class="progress-heading">
+              <span class="progress-heading-icon" :class="{ active: message.streaming }">
+                <el-icon><Loading v-if="message.streaming" /><Check v-else /></el-icon>
+              </span>
+              <strong>{{ message.streaming ? '正在处理' : '处理完成' }}</strong>
+            </div>
+            <ol>
+              <li
+                v-for="(step, stepIndex) in message.progress"
+                :key="`${step.stage}-${stepIndex}`"
+                :class="{ complete: step.complete, active: !step.complete }"
+              >
+                <span class="progress-marker">
+                  <el-icon v-if="step.complete"><Check /></el-icon>
+                  <i v-else></i>
+                </span>
+                <span>{{ step.label }}</span>
+              </li>
+            </ol>
           </div>
-          {{ message.content }}
+          <div v-if="message.content" class="answer-copy">
+            {{ message.content }}<i v-if="message.streaming" class="stream-caret"></i>
+          </div>
           <div v-if="message.result" class="answer-meta">
             <span>{{ message.result.prompt_tokens + message.result.completion_tokens }} Token</span>
             <span>¥{{ message.result.cost.toFixed(6) }}</span>
@@ -138,9 +174,7 @@ async function send(): Promise<void> {
       <el-button
         class="send-button"
         type="primary"
-        circle
-        :loading="sending"
-        :disabled="!input.trim()"
+        :disabled="sending || !input.trim()"
         aria-label="发送消息"
         title="发送"
         @click="send"

@@ -105,6 +105,8 @@ async def test_agent_streams_native_model_deltas_and_auditable_statuses() -> Non
         "员工 001 属于研发部。"
     )
     assert any(event.stage == "tool" and "员工" in (event.label or "") for event in events)
+    stages = [event.stage for event in events if event.type == "status"]
+    assert stages == ["understanding", "tool", "generating"]
     result = events[-1].result
     assert result is not None
     assert result.tool_calls[0]["name"] == "get_employee"
