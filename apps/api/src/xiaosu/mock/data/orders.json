@@ -1,0 +1,23 @@
+[
+  {"id": "O2026080201", "amount": "450.00", "refund_amount": "0", "date": "2026-08-02", "customer": "边界测试公司", "status": "paid"},
+  {"id": "O2026080301", "amount": "1280.00", "refund_amount": "0", "date": "2026-08-03", "customer": "A公司", "status": "paid"},
+  {"id": "O2026080302", "amount": "300.00", "refund_amount": "0", "date": "2026-08-03", "customer": "B公司", "status": "cancelled"},
+  {"id": "O2026080401", "amount": "860.00", "refund_amount": "860.00", "date": "2026-08-04", "customer": "C公司", "status": "refunded"},
+  {"id": "O2026080501", "amount": "2100.00", "refund_amount": "200.00", "date": "2026-08-05", "customer": "D公司", "status": "partial_refund"},
+  {"id": "O2026080601", "amount": "5200.00", "refund_amount": "0", "date": "2026-08-06", "customer": "E公司", "status": "paid"},
+  {"id": "O2026080701", "amount": "999.00", "refund_amount": "0", "date": "2026-08-07", "customer": "F公司", "status": "paid"},
+  {"id": "O2026080801", "amount": "760.00", "refund_amount": "0", "date": "2026-08-08", "customer": "G公司", "status": "paid"},
+  {"id": "O2026080901", "amount": "3200.00", "refund_amount": "500.00", "date": "2026-08-09", "customer": "H公司", "status": "partial_refund"},
+  {"id": "O2026081001", "amount": "680.00", "refund_amount": "0", "date": "2026-08-10", "customer": "I公司", "status": "paid"},
+  {"id": "O2026081101", "amount": "1560.00", "refund_amount": "0", "date": "2026-08-11", "customer": "J公司", "status": "paid"},
+  {"id": "O2026081102", "amount": "400.00", "refund_amount": "0", "date": "2026-08-11", "customer": "K公司", "status": "cancelled"},
+  {"id": "O2026081201", "amount": "2480.00", "refund_amount": "0", "date": "2026-08-12", "customer": "L公司", "status": "paid"},
+  {"id": "O2026081301", "amount": "1100.00", "refund_amount": "1100.00", "date": "2026-08-13", "customer": "M公司", "status": "refunded"},
+  {"id": "O2026081401", "amount": "4999.00", "refund_amount": "300.00", "date": "2026-08-14", "customer": "N公司", "status": "partial_refund"},
+  {"id": "O2026073101", "amount": "888.00", "refund_amount": "0", "date": "2026-07-31", "customer": "O公司", "status": "paid"},
+  {"id": "O2026061501", "amount": "6280.00", "refund_amount": "0", "date": "2026-06-15", "customer": "P公司", "status": "paid"},
+  {"id": "O2026061601", "amount": "1200.00", "refund_amount": "1200.00", "date": "2026-06-16", "customer": "Q公司", "status": "refunded"},
+  {"id": "O2026061701", "amount": "2300.00", "refund_amount": "0", "date": "2026-06-17", "customer": "R公司", "status": "paid"},
+  {"id": "O2026061801", "amount": "750.00", "refund_amount": "0", "date": "2026-06-18", "customer": "S公司", "status": "cancelled"}
+]
+

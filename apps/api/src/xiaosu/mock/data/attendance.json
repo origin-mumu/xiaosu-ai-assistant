@@ -1,0 +1,28 @@
+[
+  {"emp_id": "001", "date": "2026-08-03", "check_in": "09:01", "check_out": "18:12", "status": "normal"},
+  {"emp_id": "001", "date": "2026-08-04", "check_in": "09:18", "check_out": "18:26", "status": "late"},
+  {"emp_id": "001", "date": "2026-08-05", "check_in": null, "check_out": null, "status": "leave"},
+  {"emp_id": "001", "date": "2026-08-06", "check_in": "08:56", "check_out": "21:10", "status": "overtime"},
+  {"emp_id": "001", "date": "2026-08-07", "check_in": "08:59", "check_out": "18:08", "status": "normal"},
+  {"emp_id": "001", "date": "2026-08-10", "check_in": "09:03", "check_out": "18:15", "status": "normal"},
+  {"emp_id": "001", "date": "2026-08-11", "check_in": "09:07", "check_out": null, "status": "missing_punch"},
+  {"emp_id": "001", "date": "2026-08-12", "check_in": null, "check_out": null, "status": "absent"},
+  {"emp_id": "001", "date": "2026-08-13", "check_in": "08:48", "check_out": "20:42", "status": "overtime"},
+  {"emp_id": "001", "date": "2026-08-14", "check_in": "09:00", "check_out": "18:02", "status": "normal"},
+  {"emp_id": "002", "date": "2026-08-03", "check_in": "08:42", "check_out": "19:20", "status": "normal"},
+  {"emp_id": "002", "date": "2026-08-04", "check_in": "08:51", "check_out": "19:04", "status": "normal"},
+  {"emp_id": "002", "date": "2026-08-05", "check_in": "09:22", "check_out": "19:10", "status": "late"},
+  {"emp_id": "002", "date": "2026-08-06", "check_in": "08:45", "check_out": "22:03", "status": "overtime"},
+  {"emp_id": "002", "date": "2026-08-07", "check_in": "08:58", "check_out": "18:52", "status": "normal"},
+  {"emp_id": "003", "date": "2026-08-03", "check_in": "08:55", "check_out": "18:01", "status": "normal"},
+  {"emp_id": "003", "date": "2026-08-04", "check_in": null, "check_out": null, "status": "leave"},
+  {"emp_id": "003", "date": "2026-08-05", "check_in": "08:57", "check_out": "18:05", "status": "normal"},
+  {"emp_id": "003", "date": "2026-08-06", "check_in": "08:49", "check_out": "18:06", "status": "normal"},
+  {"emp_id": "003", "date": "2026-08-07", "check_in": "08:53", "check_out": "18:09", "status": "normal"},
+  {"emp_id": "004", "date": "2026-08-03", "check_in": "09:00", "check_out": "18:00", "status": "normal"},
+  {"emp_id": "004", "date": "2026-08-04", "check_in": "09:02", "check_out": "18:11", "status": "normal"},
+  {"emp_id": "004", "date": "2026-08-05", "check_in": "09:31", "check_out": "18:20", "status": "late"},
+  {"emp_id": "004", "date": "2026-08-06", "check_in": null, "check_out": null, "status": "absent"},
+  {"emp_id": "004", "date": "2026-08-07", "check_in": "08:58", "check_out": "18:03", "status": "normal"}
+]
+

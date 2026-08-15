@@ -8,6 +8,7 @@
 
 - Vue 3、TypeScript、Vite 和 Element Plus 管理后台。
 - FastAPI 服务及健康检查接口。
+- 员工、考勤和订单 Mock 内部 API。
 - PostgreSQL 与 pgvector 开发环境。
 - Docker Compose 一条命令启动入口。
 - Python 和前端基础自动化检查。
@@ -44,13 +45,26 @@
 
     ./scripts/test.sh
 
+## Mock 内部 API
+
+| 方法 | 地址 | 说明 |
+|---|---|---|
+| GET | /api/v1/mock/employees/{id} | 查询员工信息 |
+| GET | /api/v1/mock/attendance | 按员工和日期范围查询考勤 |
+| GET | /api/v1/mock/orders | 按日期范围查询订单及汇总 |
+
+示例：
+
+    GET /api/v1/mock/employees/001
+    GET /api/v1/mock/attendance?employee_id=001&start_date=2026-08-03&end_date=2026-08-09
+    GET /api/v1/mock/orders?start_date=2026-08-03&end_date=2026-08-09
+
 ## Roadmap
 
-- [ ] Mock 员工、考勤和订单 API
+- [x] Mock 员工、考勤和订单 API
 - [ ] 多格式文档解析与增量索引
 - [ ] 基于 pgvector 的知识库检索与引用
 - [ ] Agent 工具调用与多轮对话
 - [ ] 文档、日志和设置后台
 - [ ] 钉钉 Stream 机器人
 - [ ] 自动化 Evals 与在线 Demo
-

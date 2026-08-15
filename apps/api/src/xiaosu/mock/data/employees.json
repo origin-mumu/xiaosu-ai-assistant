@@ -1,0 +1,15 @@
+[
+  {"id": "001", "name": "张三", "dept": "研发部", "level": "P5", "status": "active"},
+  {"id": "002", "name": "李四", "dept": "销售部", "level": "P6", "status": "active"},
+  {"id": "003", "name": "王芳", "dept": "人力资源部", "level": "P5", "status": "active"},
+  {"id": "004", "name": "赵磊", "dept": "财务部", "level": "P6", "status": "active"},
+  {"id": "005", "name": "陈晨", "dept": "产品部", "level": "P5", "status": "active"},
+  {"id": "006", "name": "刘洋", "dept": "研发部", "level": "P7", "status": "active"},
+  {"id": "007", "name": "杨帆", "dept": "市场部", "level": "P4", "status": "leave"},
+  {"id": "008", "name": "周敏", "dept": "客户成功部", "level": "P5", "status": "active"},
+  {"id": "009", "name": "吴昊", "dept": "法务部", "level": "P6", "status": "active"},
+  {"id": "010", "name": "郑雪", "dept": "行政部", "level": "P4", "status": "active"},
+  {"id": "011", "name": "孙浩", "dept": "研发部", "level": "P4", "status": "terminated"},
+  {"id": "012", "name": "何静", "dept": "销售部", "level": "P5", "status": "active"}
+]
+

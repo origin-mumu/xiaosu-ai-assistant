@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from xiaosu.api.health import router as health_router
+from xiaosu.api.mock import router as mock_router
 from xiaosu.core.config import get_settings
 
 
@@ -20,6 +21,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     app.include_router(health_router, prefix="/api/v1")
+    app.include_router(mock_router, prefix="/api/v1")
     return app
 
 
