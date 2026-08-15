@@ -50,6 +50,19 @@ class MessageLogResponse(BaseModel):
     created_at: datetime
 
 
+class MessageUserOption(BaseModel):
+    value: str
+    label: str
+
+
+class MessagePageResponse(BaseModel):
+    items: list[MessageLogResponse]
+    total: int
+    page: int
+    page_size: int
+    users: list[MessageUserOption]
+
+
 @dataclass(slots=True)
 class AgentToolCall:
     id: str
@@ -66,9 +79,26 @@ class ModelTurn:
 
 
 @dataclass(slots=True)
+class ModelStreamEvent:
+    type: Literal["content", "done"]
+    content: str = ""
+    turn: ModelTurn | None = None
+
+
+@dataclass(slots=True)
+class AgentStreamEvent:
+    type: Literal["status", "delta", "done"]
+    stage: str | None = None
+    label: str | None = None
+    content: str = ""
+    result: "AgentResult | None" = None
+
+
+@dataclass(slots=True)
 class AgentResult:
     answer: str
     citations: list[Citation]
     tool_calls: list[dict[str, object]]
     prompt_tokens: int
     completion_tokens: int
+    status: Literal["completed", "unanswered"] = "completed"

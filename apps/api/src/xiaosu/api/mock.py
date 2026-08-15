@@ -14,6 +14,13 @@ router = APIRouter(
 )
 
 
+@router.get("/employees", response_model=list[Employee])
+async def find_employees(
+    name: Annotated[str, Query(min_length=1, max_length=50)],
+) -> list[Employee]:
+    return mock_internal_system.find_employees(name)
+
+
 @router.get("/employees/{employee_id}", response_model=Employee)
 async def get_employee(employee_id: str) -> Employee:
     employee = mock_internal_system.get_employee(employee_id)

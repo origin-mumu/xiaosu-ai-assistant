@@ -43,6 +43,14 @@ async def test_get_employee_returns_expected_department() -> None:
     }
 
 
+async def test_find_employee_by_name_supports_follow_up_tool_calls() -> None:
+    async with authenticated_client() as client:
+        response = await client.get("/api/v1/mock/employees", params={"name": "张三"})
+
+    assert response.status_code == 200
+    assert response.json()[0]["id"] == "001"
+
+
 async def test_get_unknown_employee_returns_404() -> None:
     async with authenticated_client() as client:
         response = await client.get("/api/v1/mock/employees/999")

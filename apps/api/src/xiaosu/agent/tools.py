@@ -27,6 +27,19 @@ TOOL_DEFINITIONS: list[dict[str, object]] = [
     {
         "type": "function",
         "function": {
+            "name": "find_employee",
+            "description": "用户只提供姓名时，先按姓名查找员工编号、部门和职级。",
+            "parameters": {
+                "type": "object",
+                "properties": {"name": {"type": "string", "description": "员工姓名"}},
+                "required": ["name"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "get_employee",
             "description": "按三位员工编号查询姓名、部门、职级等信息。",
             "parameters": {
@@ -113,6 +126,9 @@ class AgentToolExecutor:
             if name == "get_employee":
                 employee = mock_internal_system.get_employee(str(arguments.get("employee_id", "")))
                 return {"found": employee is not None, "employee": _dump(employee)}
+            if name == "find_employee":
+                employees = mock_internal_system.find_employees(str(arguments.get("name", "")))
+                return {"found": bool(employees), "employees": _dump(employees)}
             if name == "query_attendance":
                 result = mock_internal_system.query_attendance(
                     str(arguments.get("employee_id", "")),

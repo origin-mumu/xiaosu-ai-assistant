@@ -17,15 +17,18 @@ const todayCount = computed(() => {
     (item) => item.role === 'user' && new Date(item.created_at).toDateString() === today,
   ).length
 })
-const failedCount = computed(() => messages.value.filter((item) => item.status === 'failed').length)
+const failedCount = computed(() => messages.value.filter((item) => item.status !== 'completed').length)
 
 onMounted(async () => {
   try {
-    ;[documents.value, messages.value, health.value] = await Promise.all([
+    const [documentItems, messagePage, dependencyHealth] = await Promise.all([
       listDocuments(),
-      listMessages(),
+      listMessages({ pageSize: 500 }),
       fetchDependencyHealth(),
     ])
+    documents.value = documentItems
+    messages.value = messagePage.items
+    health.value = dependencyHealth
   } catch (error: unknown) {
     errorMessage.value = error instanceof Error ? error.message : '加载失败'
   } finally {
@@ -52,8 +55,8 @@ onMounted(async () => {
     <article class="metric-card metric-card-orange">
       <div class="metric-card-top"><span class="metric-icon"><el-icon><Warning /></el-icon></span><span class="metric-badge">ALERT</span></div>
       <div class="metric">{{ failedCount }}</div>
-      <div class="metric-title">失败回答</div>
-      <p class="metric-note"><span class="mini-dot"></span>可在对话日志中定位</p>
+      <div class="metric-title">未答与失败</div>
+      <p class="metric-note"><span class="mini-dot"></span>区分知识缺失与系统错误</p>
     </article>
     <article class="metric-card metric-card-green">
       <div class="metric-card-top"><span class="metric-icon"><el-icon><CircleCheck /></el-icon></span><span class="metric-badge">HEALTHY</span></div>

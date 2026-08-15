@@ -22,15 +22,17 @@ export interface ChatResult {
   status: string
 }
 
-interface StreamEvent {
-  type: 'delta' | 'done'
+export interface StreamEvent {
+  type: 'status' | 'delta' | 'done'
+  stage?: string
+  label?: string
   content?: string
   data?: ChatResult
 }
 
 export async function streamChat(
   request: ChatRequest,
-  onDelta: (content: string) => void,
+  onEvent: (event: StreamEvent) => void,
 ): Promise<ChatResult> {
   const response = await fetch('/api/v1/chat/stream', {
     method: 'POST',
@@ -51,7 +53,7 @@ export async function streamChat(
       const line = block.split('\n').find((item) => item.startsWith('data: '))
       if (!line) continue
       const event = JSON.parse(line.slice(6)) as StreamEvent
-      if (event.type === 'delta' && event.content) onDelta(event.content)
+      onEvent(event)
       if (event.type === 'done') result = event.data
     }
     if (done) break

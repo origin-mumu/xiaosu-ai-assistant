@@ -16,12 +16,13 @@
 - Qwen3.7 Text Embedding + PostgreSQL/pgvector 语义检索。
 - 回答携带文件、章节、页码/段落和可点击原文定位；低相关度时强制拒答。
 - 按平台、企业、会话、用户四个维度隔离多轮上下文。
-- SSE 增量输出，Nginx 关闭缓冲；模型异常和无效 Key 均有友好兜底。
+- 千问模型原生 Token 流通过 SSE 实时推送，Nginx 关闭缓冲；模型异常和无效 Key 均有友好兜底。
 - 钉钉 Stream 长连接机器人，无需公网回调地址。
-- 管理后台包含概览、文档、原文定位、对话日志、模型设置和调试聊天。
+- 管理后台包含概览、文档、原文定位、带用户筛选/分页的对话日志、模型设置和调试聊天。
+- 调试聊天展示“理解问题、检索知识、调用工具、组织答案”等可审计处理阶段，不暴露模型私密思维链。
 - 管理后台使用签名 HttpOnly Cookie 会话，未登录无法访问文档、对话、设置和 Mock API。
 - 结构化文件日志、请求 ID、依赖健康检查、Token/成本/耗时记录。
-- 18 条离线测试（含登录会话与 Mock LLM）和 20 条真实链路 Evals。
+- 20 条离线测试（含登录会话、原生流式事件与 Mock LLM）和 20 条真实链路 Evals。
 
 ## 架构
 
@@ -160,7 +161,7 @@ pnpm --filter @xiaosu/web dev
 ./scripts/lint.sh
 ```
 
-离线测试不依赖真实模型，包括：Mock LLM 工具选择、知识库拒答覆盖、钉钉会话隔离、多格式解析、切片与 Mock 内部 API。
+离线测试不依赖真实模型，包括：Mock LLM 工具选择、模型原生流式事件、知识库拒答覆盖、钉钉会话隔离、多格式解析、切片与 Mock 内部 API。
 
 真实模型 Evals 需要先填写 Key、启动服务并导入文档：
 
@@ -184,6 +185,7 @@ pnpm --filter @xiaosu/web dev
 | GET | `/api/v1/admin/messages` | 用户与回答日志 |
 | GET/PATCH | `/api/v1/admin/settings` | 查看状态、临时切换模型 |
 | GET | `/api/v1/mock/employees/{id}` | Mock 员工信息 |
+| GET | `/api/v1/mock/employees?name=张三` | 按姓名查员工，供后续考勤工具调用 |
 | GET | `/api/v1/mock/attendance` | Mock 考勤查询 |
 | GET | `/api/v1/mock/orders` | Mock 订单汇总 |
 
@@ -216,6 +218,9 @@ pnpm --filter @xiaosu/web dev
 - [x] 钉钉 Stream、Web 管理后台、Token/成本展示
 - [x] 管理后台登录、签名 Cookie 与受保护 API
 - [x] Mock LLM 测试和 20 条 Evals
+- [x] 千问模型原生 Token 流、Web 处理阶段与 SSE 协议
 - [ ] 企业 SSO 与细粒度角色权限
-- [ ] 模型原生 Token 流与交互式钉钉卡片
+- [ ] 交互式钉钉 AI 卡片
 - [ ] Alembic 生产迁移和 OpenTelemetry/Langfuse 链路
+
+完整题目逐项核对见 [功能验收矩阵](docs/requirements-audit.md)。

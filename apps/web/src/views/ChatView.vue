@@ -1,13 +1,21 @@
 <script setup lang="ts">
+import { Promotion } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { nextTick, ref } from 'vue'
 
-import { streamChat, type ChatResult } from '@/api/chat'
+import { streamChat, type ChatResult, type StreamEvent } from '@/api/chat'
+
+interface ProgressStep {
+  stage: string
+  label: string
+  complete: boolean
+}
 
 interface DisplayMessage {
   role: 'user' | 'assistant'
   content: string
   result?: ChatResult
+  progress?: ProgressStep[]
 }
 
 const input = ref('')
@@ -21,7 +29,7 @@ async function send(): Promise<void> {
   if (!content || sending.value) return
   input.value = ''
   messages.value.push({ role: 'user', content })
-  const assistant: DisplayMessage = { role: 'assistant', content: '' }
+  const assistant: DisplayMessage = { role: 'assistant', content: '', progress: [] }
   messages.value.push(assistant)
   sending.value = true
   try {
@@ -34,8 +42,27 @@ async function send(): Promise<void> {
         user_id: 'admin',
         user_name: '管理员',
       },
-      (delta) => {
-        assistant.content += delta
+      (event: StreamEvent) => {
+        if (event.type === 'status' && event.stage && event.label) {
+          const previous = assistant.progress?.[assistant.progress.length - 1]
+          if (previous) previous.complete = true
+          if (!previous || previous.stage !== event.stage || previous.label !== event.label) {
+            assistant.progress?.push({
+              stage: event.stage,
+              label: event.label,
+              complete: false,
+            })
+          }
+        }
+        if (event.type === 'delta' && event.content) {
+          const current = assistant.progress?.[assistant.progress.length - 1]
+          if (current) current.complete = true
+          assistant.content += event.content
+        }
+        if (event.type === 'done') {
+          const current = assistant.progress?.[assistant.progress.length - 1]
+          if (current) current.complete = true
+        }
         void nextTick(() =>
           document
             .querySelector('.chat-list')
@@ -67,6 +94,15 @@ async function send(): Promise<void> {
         :class="message.role"
       >
         <div class="bubble">
+          <div v-if="message.role === 'assistant' && message.progress?.length" class="answer-progress">
+            <span
+              v-for="(step, stepIndex) in message.progress"
+              :key="`${step.stage}-${stepIndex}`"
+              :class="{ complete: step.complete }"
+            >
+              <i></i>{{ step.label }}
+            </span>
+          </div>
           {{ message.content }}
           <div v-if="message.result" class="answer-meta">
             <span>{{ message.result.prompt_tokens + message.result.completion_tokens }} Token</span>
@@ -80,8 +116,11 @@ async function send(): Promise<void> {
               :key="citation.chunk_id"
               :to="`/documents/${citation.document_id}?chunk=${citation.chunk_id}`"
             >
-              {{ citation.filename }} ·
-              {{ citation.section_title ?? `第 ${citation.paragraph_start ?? '-'} 段` }}
+              <strong>
+                {{ citation.filename }} ·
+                {{ citation.section_title ?? `第 ${citation.paragraph_start ?? '-'} 段` }}
+              </strong>
+              <small>{{ citation.content }}</small>
             </router-link>
           </div>
         </div>
@@ -91,12 +130,21 @@ async function send(): Promise<void> {
       <el-input
         v-model="input"
         type="textarea"
-        :rows="2"
+        :autosize="{ minRows: 1, maxRows: 4 }"
         resize="none"
         placeholder="输入问题，Enter 发送，Shift+Enter 换行"
         @keydown.enter.exact.prevent="send"
       />
-      <el-button type="primary" :loading="sending" @click="send">发送</el-button>
+      <el-button
+        class="send-button"
+        type="primary"
+        circle
+        :loading="sending"
+        :disabled="!input.trim()"
+        aria-label="发送消息"
+        title="发送"
+        @click="send"
+      ><el-icon><Promotion /></el-icon></el-button>
     </div>
   </el-card>
 </template>

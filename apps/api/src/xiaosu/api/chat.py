@@ -1,4 +1,3 @@
-import asyncio
 import json
 from collections.abc import AsyncIterator
 from typing import Annotated
@@ -33,15 +32,9 @@ async def stream_chat(
     session: SessionDependency,
     settings: SettingsDependency,
 ) -> StreamingResponse:
-    result = await ChatService(session, settings).chat(request)
-
     async def events() -> AsyncIterator[str]:
-        for start in range(0, len(result.answer), 8):
-            payload = {"type": "delta", "content": result.answer[start : start + 8]}
+        async for payload in ChatService(session, settings).stream_chat(request):
             yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
-            await asyncio.sleep(0.015)
-        completed = {"type": "done", "data": result.model_dump(mode="json")}
-        yield f"data: {json.dumps(completed, ensure_ascii=False)}\n\n"
 
     return StreamingResponse(
         events(),

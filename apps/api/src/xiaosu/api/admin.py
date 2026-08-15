@@ -2,10 +2,14 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from xiaosu.agent.schemas import MessageLogResponse
+from xiaosu.agent.schemas import (
+    MessageLogResponse,
+    MessagePageResponse,
+    MessageUserOption,
+)
 from xiaosu.api.auth import require_admin
 from xiaosu.core.config import Settings, get_settings
 from xiaosu.db.models import Conversation, Message
@@ -19,18 +23,42 @@ class SettingsUpdate(BaseModel):
     llm_model: str = Field(min_length=2, max_length=100, pattern=r"^[a-zA-Z0-9._-]+$")
 
 
-@router.get("/messages", response_model=list[MessageLogResponse])
+@router.get("/messages", response_model=MessagePageResponse)
 async def list_messages(
     session: SessionDependency,
-    limit: Annotated[int, Query(ge=1, le=500)] = 100,
-) -> list[MessageLogResponse]:
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=500)] = 20,
+    platform: Annotated[str | None, Query(pattern=r"^(web|dingtalk)$")] = None,
+    user_id: str | None = None,
+    message_status: Annotated[
+        str | None, Query(alias="status", pattern=r"^(completed|unanswered|failed)$")
+    ] = None,
+) -> MessagePageResponse:
+    conditions = []
+    if platform:
+        conditions.append(Conversation.platform == platform)
+    if user_id:
+        conditions.append(Conversation.external_user_id == user_id)
+    if message_status:
+        conditions.append(Message.status == message_status)
+
+    total = await session.scalar(
+        select(func.count(Message.id)).join(Conversation).where(*conditions)
+    )
     rows = await session.execute(
         select(Message, Conversation)
         .join(Conversation)
+        .where(*conditions)
         .order_by(Message.created_at.desc())
-        .limit(limit)
+        .offset((page - 1) * page_size)
+        .limit(page_size)
     )
-    return [
+    user_rows = await session.execute(
+        select(Conversation.external_user_id, func.max(Conversation.user_name))
+        .group_by(Conversation.external_user_id)
+        .order_by(func.max(Conversation.user_name), Conversation.external_user_id)
+    )
+    items = [
         MessageLogResponse(
             id=message.id,
             conversation_id=conversation.id,
@@ -52,6 +80,17 @@ async def list_messages(
         )
         for message, conversation in rows
     ]
+    users = [
+        MessageUserOption(value=external_user_id, label=user_name or external_user_id)
+        for external_user_id, user_name in user_rows
+    ]
+    return MessagePageResponse(
+        items=items,
+        total=total or 0,
+        page=page,
+        page_size=page_size,
+        users=users,
+    )
 
 
 @router.get("/settings")

@@ -29,7 +29,7 @@ Agent 测试第一次在 Windows 失败。AI 直接使用 `ZoneInfo("Asia/Shangh
 
 ## 4. 如何验证 AI 生成的代码
 
-- 后端每个阶段都执行 pytest、Ruff check 和 Ruff format check，目前有 16 条离线测试。
+- 后端每个阶段都执行 pytest、Ruff check 和 Ruff format check，目前有 20 条离线测试。
 - Mock LLM 测试验证模型先选择工具、接收工具结果再作答；另一条测试故意让模型编造 CEO 地址，确认系统层会覆盖成拒答。
 - 前端执行严格 TypeScript 检查和 Vite 生产构建。
 - Docker 中实际创建 pgvector 表，调用健康、上传、聊天、日志和设置接口。
@@ -39,4 +39,4 @@ Agent 测试第一次在 Windows 失败。AI 直接使用 `ZoneInfo("Asia/Shangh
 
 ## 5. 如果再做一遍
 
-我会先把题目中的验收问题变成 Evals，再从测试倒推数据和工具 schema；同时第一天就确定事件协议，让 Web SSE 和钉钉卡片都消费统一的 `delta/tool/citation/done` 事件。数据库方面会从第一版就使用 Alembic，而不是原型阶段用 `create_all`。最后，我会更早做 1280px 和移动端视觉检查，减少功能完成后的样式返工。
+我会先把题目中的验收问题变成 Evals，再从测试倒推数据和工具 schema；同时第一天就确定事件协议，让 Web SSE 和钉钉卡片都消费统一的 `status/delta/done` 事件。数据库方面会从第一版就使用 Alembic，而不是原型阶段用 `create_all`。最后，我会更早做 1280px 和移动端视觉检查，减少功能完成后的样式返工。

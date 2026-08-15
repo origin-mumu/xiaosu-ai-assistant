@@ -24,6 +24,12 @@ class MockInternalSystemService:
             None,
         )
 
+    def find_employees(self, name: str) -> list[Employee]:
+        normalized = name.strip().casefold()
+        if not normalized:
+            return []
+        return [employee for employee in load_employees() if normalized in employee.name.casefold()]
+
     def query_attendance(
         self,
         employee_id: str,

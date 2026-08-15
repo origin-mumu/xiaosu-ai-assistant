@@ -21,6 +21,27 @@ export interface MessageLog {
   created_at: string
 }
 
+export interface MessageUserOption {
+  value: string
+  label: string
+}
+
+export interface MessagePage {
+  items: MessageLog[]
+  total: number
+  page: number
+  page_size: number
+  users: MessageUserOption[]
+}
+
+export interface MessageQuery {
+  page?: number
+  pageSize?: number
+  platform?: string
+  userId?: string
+  status?: string
+}
+
 export interface SystemSettings {
   llm_provider: string
   llm_model: string
@@ -32,8 +53,15 @@ export interface SystemSettings {
   retrieval_min_score: number
 }
 
-export function listMessages(limit = 200): Promise<MessageLog[]> {
-  return apiRequest(`/admin/messages?limit=${limit}`)
+export function listMessages(query: MessageQuery = {}): Promise<MessagePage> {
+  const params = new URLSearchParams({
+    page: String(query.page ?? 1),
+    page_size: String(query.pageSize ?? 200),
+  })
+  if (query.platform) params.set('platform', query.platform)
+  if (query.userId) params.set('user_id', query.userId)
+  if (query.status) params.set('status', query.status)
+  return apiRequest(`/admin/messages?${params.toString()}`)
 }
 
 export function fetchSettings(): Promise<SystemSettings> {

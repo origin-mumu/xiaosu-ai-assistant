@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterator
 from decimal import Decimal
 from time import perf_counter
 from uuid import uuid4
@@ -53,7 +54,7 @@ class ChatService:
                 conversation_id=conversation.id,
                 role="assistant",
                 content=result.answer,
-                status="completed",
+                status=result.status,
                 model=self.settings.llm_model,
                 prompt_tokens=result.prompt_tokens,
                 completion_tokens=result.completion_tokens,
@@ -75,7 +76,7 @@ class ChatService:
                 completion_tokens=result.completion_tokens,
                 cost=float(cost),
                 latency_ms=latency_ms,
-                status="completed",
+                status=result.status,
             )
         except Exception as error:
             await self.session.rollback()
@@ -105,6 +106,103 @@ class ChatService:
                 latency_ms=latency_ms,
                 status="failed",
             )
+
+    async def stream_chat(self, request: ChatRequest) -> AsyncIterator[dict[str, object]]:
+        started = perf_counter()
+        conversation = await self._conversation(request)
+        history = await self._history(conversation.id)
+        self.session.add(
+            Message(
+                conversation_id=conversation.id,
+                role="user",
+                content=request.message,
+                status="completed",
+            )
+        )
+        await self.session.commit()
+        try:
+            model = self.model or DashScopeChatModel(self.settings)
+            runner = AgentRunner(
+                model,
+                AgentToolExecutor(self.session, self.settings),
+                self.settings.agent_max_steps,
+            )
+            async for event in runner.stream(history, request.message):
+                if event.type == "status":
+                    yield {
+                        "type": "status",
+                        "stage": event.stage or "working",
+                        "label": event.label or "正在处理",
+                    }
+                    continue
+                if event.type == "delta":
+                    yield {"type": "delta", "content": event.content}
+                    continue
+                result = event.result
+                if result is None:
+                    raise RuntimeError("Agent 流未返回结果")
+                latency_ms = int((perf_counter() - started) * 1000)
+                cost = self._cost(result.prompt_tokens, result.completion_tokens)
+                message = Message(
+                    id=uuid4(),
+                    conversation_id=conversation.id,
+                    role="assistant",
+                    content=result.answer,
+                    status=result.status,
+                    model=self.settings.llm_model,
+                    prompt_tokens=result.prompt_tokens,
+                    completion_tokens=result.completion_tokens,
+                    cost=cost,
+                    latency_ms=latency_ms,
+                    tool_calls=result.tool_calls,
+                    citations=[citation.model_dump(mode="json") for citation in result.citations],
+                )
+                self.session.add(message)
+                conversation.last_active_at = utc_now()
+                await self.session.commit()
+                response = ChatResponse(
+                    conversation_uuid=conversation.id,
+                    message_id=message.id,
+                    answer=result.answer,
+                    citations=result.citations,
+                    tool_calls=result.tool_calls,
+                    prompt_tokens=result.prompt_tokens,
+                    completion_tokens=result.completion_tokens,
+                    cost=float(cost),
+                    latency_ms=latency_ms,
+                    status=result.status,
+                )
+                yield {"type": "done", "data": response.model_dump(mode="json")}
+        except Exception as error:
+            await self.session.rollback()
+            latency_ms = int((perf_counter() - started) * 1000)
+            friendly = "小苏暂时无法连接模型服务，请稍后重试或联系管理员检查 API Key。"
+            message = Message(
+                id=uuid4(),
+                conversation_id=conversation.id,
+                role="assistant",
+                content=friendly,
+                status="failed",
+                model=self.settings.llm_model,
+                latency_ms=latency_ms,
+                error_code=type(error).__name__,
+            )
+            self.session.add(message)
+            await self.session.commit()
+            response = ChatResponse(
+                conversation_uuid=conversation.id,
+                message_id=message.id,
+                answer=friendly,
+                citations=[],
+                tool_calls=[],
+                prompt_tokens=0,
+                completion_tokens=0,
+                cost=0,
+                latency_ms=latency_ms,
+                status="failed",
+            )
+            yield {"type": "delta", "content": friendly}
+            yield {"type": "done", "data": response.model_dump(mode="json")}
 
     async def _conversation(self, request: ChatRequest) -> Conversation:
         statement = select(Conversation).where(
