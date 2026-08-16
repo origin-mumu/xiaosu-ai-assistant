@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check, Loading, Promotion } from '@element-plus/icons-vue'
+import { Check, Delete, Loading, Plus, Promotion } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { nextTick, reactive, ref } from 'vue'
 
@@ -30,8 +30,8 @@ const messages = ref<DisplayMessage[]>([])
 const citationVisible = ref(false)
 const activeCitation = ref<Citation | null>(null)
 const minimumProgressDuration = 240
-const conversationId = sessionStorage.getItem('xiaosu-conversation') ?? crypto.randomUUID()
-sessionStorage.setItem('xiaosu-conversation', conversationId)
+const conversationId = ref(sessionStorage.getItem('xiaosu-conversation') ?? crypto.randomUUID())
+sessionStorage.setItem('xiaosu-conversation', conversationId.value)
 
 function wait(milliseconds: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds))
@@ -40,6 +40,13 @@ function wait(milliseconds: number): Promise<void> {
 function openCitation(citation: Citation): void {
   activeCitation.value = citation
   citationVisible.value = true
+}
+
+function startNewChat(): void {
+  conversationId.value = crypto.randomUUID()
+  sessionStorage.setItem('xiaosu-conversation', conversationId.value)
+  messages.value = []
+  ElMessage.success('已开启全新会话')
 }
 
 async function send(): Promise<void> {
@@ -62,7 +69,7 @@ async function send(): Promise<void> {
         message: content,
         platform: 'web',
         tenant_id: 'default',
-        conversation_id: conversationId,
+        conversation_id: conversationId.value,
         user_id: 'admin',
         user_name: '管理员',
       },
@@ -107,7 +114,7 @@ async function send(): Promise<void> {
       },
     )
   } catch (error: unknown) {
-    assistant.content = '请求失败，请检查后端。'
+    assistant.content = '请求失败，请检查后端服务'
     assistant.streaming = false
     ElMessage.error(error instanceof Error ? error.message : '聊天失败')
   } finally {
@@ -119,11 +126,14 @@ async function send(): Promise<void> {
 
 <template>
   <el-card shadow="never" class="chat-card">
+    <div class="chat-header-actions" v-if="messages.length">
+      <el-button size="small" :icon="Plus" round @click="startNewChat">开启新对话</el-button>
+    </div>
     <div class="chat-list">
       <div v-if="!messages.length" class="chat-empty">
         <span class="chat-mascot"><img src="/xiaosu-mascot.png" alt="小苏" /></span>
         <h2>你好，我是小苏</h2>
-        <p>试试问：员工 001 是哪个部门的？／上周一共多少订单？／现在几点？</p>
+        <p>试试问：公司员工有哪些年假？／员工 001 是哪个部门的？／上周一共多少订单？</p>
       </div>
       <div
         v-for="(message, index) in messages"
@@ -215,3 +225,15 @@ async function send(): Promise<void> {
     />
   </el-dialog>
 </template>
+
+<style scoped>
+.chat-card {
+  position: relative;
+}
+.chat-header-actions {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  z-index: 10;
+}
+</style>
