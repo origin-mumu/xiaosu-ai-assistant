@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check, Delete, Loading, Plus, Promotion } from '@element-plus/icons-vue'
+import { Check, Loading, Promotion } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { nextTick, reactive, ref } from 'vue'
 
@@ -30,8 +30,9 @@ const messages = ref<DisplayMessage[]>([])
 const citationVisible = ref(false)
 const activeCitation = ref<Citation | null>(null)
 const minimumProgressDuration = 240
-const conversationId = ref(sessionStorage.getItem('xiaosu-conversation') ?? crypto.randomUUID())
-sessionStorage.setItem('xiaosu-conversation', conversationId.value)
+
+// 纯内存管理：每次进入或刷新页面自动生成全新的会话 ID，不依赖任何本地存储持久化
+const conversationId = ref(crypto.randomUUID())
 
 function wait(milliseconds: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds))
@@ -40,13 +41,6 @@ function wait(milliseconds: number): Promise<void> {
 function openCitation(citation: Citation): void {
   activeCitation.value = citation
   citationVisible.value = true
-}
-
-function startNewChat(): void {
-  conversationId.value = crypto.randomUUID()
-  sessionStorage.setItem('xiaosu-conversation', conversationId.value)
-  messages.value = []
-  ElMessage.success('已开启全新会话')
 }
 
 async function send(): Promise<void> {
@@ -126,9 +120,6 @@ async function send(): Promise<void> {
 
 <template>
   <el-card shadow="never" class="chat-card">
-    <div class="chat-header-actions" v-if="messages.length">
-      <el-button size="small" :icon="Plus" round @click="startNewChat">开启新对话</el-button>
-    </div>
     <div class="chat-list">
       <div v-if="!messages.length" class="chat-empty">
         <span class="chat-mascot"><img src="/xiaosu-mascot.png" alt="小苏" /></span>
@@ -229,11 +220,5 @@ async function send(): Promise<void> {
 <style scoped>
 .chat-card {
   position: relative;
-}
-.chat-header-actions {
-  position: absolute;
-  top: 16px;
-  right: 20px;
-  z-index: 10;
 }
 </style>
