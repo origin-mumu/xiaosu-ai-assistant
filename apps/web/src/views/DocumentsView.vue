@@ -71,7 +71,7 @@ async function handleUpload(options: UploadRequestOptions): Promise<void> {
     ElMessage.success(
       result.action === 'unchanged'
         ? `「${options.file.name}」已跳过：内容未变或策略为保留`
-        : `「${options.file.name}」已完成解析与向量索引（生成 ${result.chunk_count} 个切片）`,
+        : `「${options.file.name}」已完成解析与向量索引（生成 ${result.document.chunk_count} 个切片）`,
     )
     await refresh()
   } catch (error: unknown) {
