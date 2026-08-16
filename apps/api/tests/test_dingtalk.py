@@ -58,7 +58,7 @@ def test_dingtalk_answer_lists_document_and_tool_sources() -> None:
         "https://demo.example.com",
     )
 
-    assert "引用与数据来源" in markdown
+    assert "知识库检索溯源" in markdown
     assert f"https://demo.example.com/documents/{document_id}?chunk={chunk_id}" in markdown
     assert "员工信息查询" in markdown
     assert "get_employee" not in markdown

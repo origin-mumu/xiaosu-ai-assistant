@@ -19,6 +19,7 @@ def format_im_sources(
     tool_calls: list[dict[str, object]],
     base_url: str | None = None,
 ) -> str:
+    # 知识库检索的结果已通过具体文档引用 (citations) 展示，过滤掉冗余的 search_knowledge 工具名
     other_tools = [
         call for call in tool_calls
         if str(call.get("name", "")) != "search_knowledge"
@@ -27,7 +28,7 @@ def format_im_sources(
         return ""
 
     origin = (base_url or "").rstrip("/") or "http://localhost:8080"
-    lines = ["---", "### 引用与数据来源"]
+    lines = ["---", "📚 **知识库检索溯源：**", "本回答基于以下已索引文档切片综合生成："]
     for index, citation in enumerate(citations, start=1):
         location = []
         if citation.section_title:
@@ -38,14 +39,14 @@ def format_im_sources(
             location.append(f"第 {citation.paragraph_start} 段")
         label = " · ".join(location) or "原文片段"
         url = f"{origin}/documents/{citation.document_id}?chunk={citation.chunk_id}"
-        lines.append(f"{index}. [📄 {citation.filename} · {label}]({url})")
+        lines.append(f"{index}. [🔗 {citation.filename} · {label}]({url})")
         excerpt = " ".join(citation.content.split())
         if len(excerpt) > 160:
             excerpt = f"{excerpt[:160]}…"
-        lines.append(f"   > {excerpt}")
+        lines.append(f"   > 摘录：{excerpt}")
 
     offset = len(citations)
     for index, call in enumerate(other_tools, start=1):
         name = str(call.get("name", "unknown"))
-        lines.append(f"{offset + index}. 🔧 内部系统 · {tool_display_name(name)}")
+        lines.append(f"{offset + index}. 🔧 内部系统数据 · {tool_display_name(name)}")
     return "\n".join(lines)

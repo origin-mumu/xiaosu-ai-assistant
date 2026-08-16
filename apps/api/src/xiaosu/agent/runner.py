@@ -35,7 +35,7 @@ class AgentRunner:
         call_logs: list[dict[str, object]] = []
         prompt_tokens = 0
         completion_tokens = 0
-        answer = "抱歉，我暂时无法完成这个请求。"
+        answer = "抱歉，公司知识库中暂未收录相关制度或数据。"
 
         for _ in range(self.max_steps):
             turn = await self.model.complete(messages, TOOL_DEFINITIONS)
@@ -100,7 +100,7 @@ class AgentRunner:
         prompt_tokens = 0
         completion_tokens = 0
         answer_parts: list[str] = []
-        answer = "抱歉，我暂时无法完成这个请求。"
+        answer = "抱歉，公司知识库中暂未收录相关制度或数据。"
 
         yield AgentStreamEvent(
             type="status",
