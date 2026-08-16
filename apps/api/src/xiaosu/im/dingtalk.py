@@ -39,7 +39,7 @@ class XiaosuDingTalkHandler(ChatbotHandler):
             sources = format_im_sources(
                 result.citations,
                 result.tool_calls,
-                self.settings.public_base_url,
+                self.settings.public_base_url or self.settings.web_origin,
             )
             markdown = result.answer if not sources else f"{result.answer}\n\n{sources}"
             await asyncio.to_thread(
