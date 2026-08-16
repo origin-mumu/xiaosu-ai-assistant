@@ -1,10 +1,15 @@
-FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim
+FROM python:3.13-slim
 
 WORKDIR /app
 
+# Install uv using Aliyun mirror (super fast)
+RUN pip install --no-cache-dir uv -i https://mirrors.aliyun.com/pypi/simple/
+
 COPY apps/api/pyproject.toml apps/api/uv.lock ./
 COPY apps/api/src ./src
-RUN uv sync --frozen --no-dev
+
+# Sync dependencies using Aliyun PyPI mirror
+RUN uv sync --frozen --no-dev --index-url https://mirrors.aliyun.com/pypi/simple/
 
 RUN mkdir -p /app/logs /app/uploads
 

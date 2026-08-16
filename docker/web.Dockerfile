@@ -1,17 +1,23 @@
-FROM node:24-alpine AS builder
+FROM node:22-alpine AS builder
 
-RUN corepack enable
-WORKDIR /workspace
+WORKDIR /app
 
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY apps/web/package.json ./apps/web/package.json
+RUN npm config set registry https://registry.npmmirror.com && corepack enable && corepack prepare pnpm@latest --activate && pnpm config set registry https://registry.npmmirror.com
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/web/package.json ./apps/web/
+
 RUN pnpm install --frozen-lockfile
 
 COPY apps/web ./apps/web
+
 RUN pnpm --filter @xiaosu/web build
 
-FROM nginx:1.29-alpine
+FROM nginx:alpine
+
+COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=builder /workspace/apps/web/dist /usr/share/nginx/html
+
 EXPOSE 80
 
+CMD ["nginx", "-g", "daemon off;"]
