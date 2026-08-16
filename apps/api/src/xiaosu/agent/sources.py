@@ -19,7 +19,6 @@ def format_im_sources(
     tool_calls: list[dict[str, object]],
     base_url: str | None = None,
 ) -> str:
-    # 知识库检索的结果已通过具体文档引用 (citations) 展示，过滤掉冗余的 search_knowledge 工具名
     other_tools = [
         call for call in tool_calls
         if str(call.get("name", "")) != "search_knowledge"
@@ -49,5 +48,4 @@ def format_im_sources(
     for index, call in enumerate(other_tools, start=1):
         name = str(call.get("name", "unknown"))
         lines.append(f"{offset + index}. 🔧 内部系统 · {tool_display_name(name)}")
-    return "
-".join(lines)
+    return "\n".join(lines)
