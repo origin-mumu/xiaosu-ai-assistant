@@ -100,7 +100,4 @@ pytest -o asyncio_mode=auto -v
 
 - 📘 [自评与设计总结 (自评.md)](自评.md)
 - 📝 [AI 工具使用说明 (AI_USAGE.md)](AI_USAGE.md)
-- 🔍 [笔试题目要求与交付功能逐项对照表 (docs/requirements-audit.md)](docs/requirements-audit.md)
-- ⚙️ [多模型供应商配置与管理指南 (docs/model-configuration.md)](docs/model-configuration.md)
-- 🤖 [钉钉 Stream 长连接机器人接入指南 (docs/dingtalk-setup.md)](docs/dingtalk-setup.md)
-- 🛠️ [开发问题与架构演进复盘记录 (docs/development-retrospective.md)](docs/development-retrospective.md)
+
