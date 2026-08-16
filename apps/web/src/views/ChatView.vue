@@ -31,8 +31,20 @@ const citationVisible = ref(false)
 const activeCitation = ref<Citation | null>(null)
 const minimumProgressDuration = 240
 
-// 纯内存管理：每次进入或刷新页面自动生成全新的会话 ID，不依赖任何本地存储持久化
-const conversationId = ref(crypto.randomUUID())
+// 兼容纯 HTTP 非安全上下文（如 http://IP:8080）与 HTTPS 的通用 UUID 生成函数
+function generateUUID(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0
+    const v = c === 'x' ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
+}
+
+// 纯内存管理：每次进入或刷新页面自动生成全新的会话 ID
+const conversationId = ref(generateUUID())
 
 function wait(milliseconds: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds))
