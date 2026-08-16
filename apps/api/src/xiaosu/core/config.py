@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     output_price_per_million: float = 2.0
 
     admin_username: str = "admin"
-    admin_password: SecretStr | None = None
+    admin_password: SecretStr = SecretStr("admin1500")
     session_secret: SecretStr | None = None
     admin_token: SecretStr | None = None
     session_ttl_seconds: int = 8 * 60 * 60

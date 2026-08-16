@@ -95,6 +95,11 @@ async function submit(): Promise<void> {
           </el-button>
         </el-form>
 
+        <div class="login-hint-box">
+          <span class="hint-icon">💡</span>
+          <span>默认账号：<strong>admin</strong>，初始密码：<strong>admin1500</strong></span>
+        </div>
+
         <div class="login-security">
           <span class="security-dot"></span>
           会话凭证仅保存在 HttpOnly Cookie 中
@@ -104,3 +109,22 @@ async function submit(): Promise<void> {
     </section>
   </main>
 </template>
+
+<style scoped>
+.login-hint-box {
+  margin-top: 14px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px dashed rgba(99, 102, 241, 0.25);
+  font-size: 12px;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.login-hint-box strong {
+  font-weight: 600;
+  color: #3730a3;
+}
+</style>
