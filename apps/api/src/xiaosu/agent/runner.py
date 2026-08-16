@@ -8,7 +8,7 @@ from xiaosu.agent.model import ChatModel
 from xiaosu.agent.prompts import system_prompt
 from xiaosu.agent.schemas import AgentResult, AgentStreamEvent, ModelTurn
 from xiaosu.agent.sources import tool_display_name
-from xiaosu.agent.tools import TOOL_DEFINITIONS, AgentToolExecutor
+from xiaosu.agent.tools import AgentToolExecutor, TOOL_DEFINITIONS
 
 
 class AgentRunner:
@@ -44,6 +44,7 @@ class AgentRunner:
             if not turn.tool_calls:
                 answer = turn.content.strip() or answer
                 break
+
             messages.append(
                 {
                     "role": "assistant",
@@ -109,8 +110,20 @@ class AgentRunner:
             phase="start",
         )
         for step in range(self.max_steps):
-            generating_status_sent = False
-            if step:
+            turn: ModelTurn | None = None
+            step_deltas: list[str] = []
+            async for event in self.model.stream(messages, TOOL_DEFINITIONS):
+                if event.type == "content" and event.content:
+                    step_deltas.append(event.content)
+                elif event.type == "done":
+                    turn = event.turn
+            if turn is None:
+                raise RuntimeError("模型流未返回完成事件")
+            prompt_tokens += turn.prompt_tokens
+            completion_tokens += turn.completion_tokens
+
+            if not turn.tool_calls:
+                # 最终作答轮次：流式推送回答
                 yield AgentStreamEvent(
                     type="status",
                     stage="generating",
@@ -118,37 +131,13 @@ class AgentRunner:
                     detail="结合工具返回结果生成回复",
                     phase="start",
                 )
-                generating_status_sent = True
-            turn: ModelTurn | None = None
-            async for event in self.model.stream(messages, TOOL_DEFINITIONS):
-                if event.type == "content" and event.content:
-                    if not generating_status_sent:
-                        yield AgentStreamEvent(
-                            type="status",
-                            stage="generating",
-                            label="组织最终答案",
-                            detail="结合工具返回结果生成回复",
-                            phase="start",
-                        )
-                        generating_status_sent = True
-                    answer_parts.append(event.content)
-                    yield AgentStreamEvent(type="delta", content=event.content)
-                elif event.type == "done":
-                    turn = event.turn
-            if turn is None:
-                raise RuntimeError("模型流未返回完成事件")
-            prompt_tokens += turn.prompt_tokens
-            completion_tokens += turn.completion_tokens
-            if not turn.tool_calls:
-                answer = turn.content.strip() or answer
-                if not answer_parts:
-                    answer_parts.append(answer)
-                    yield AgentStreamEvent(type="delta", content=answer)
+                for chunk in step_deltas:
+                    answer_parts.append(chunk)
+                    yield AgentStreamEvent(type="delta", content=chunk)
+                answer = "".join(step_deltas).strip() or turn.content.strip() or answer
                 break
-            else:
-                # 触发工具调用时，清空之前过渡性的前置思考流式内容，确保最终正文纯净
-                answer_parts.clear()
 
+            # 触发了工具调用
             messages.append(
                 {
                     "role": "assistant",
@@ -200,7 +189,14 @@ class AgentRunner:
 
             if self.tools.knowledge_search_attempted and not self.tools.citations:
                 answer = "文档里没找到相关信息，我不能根据猜测作答。你可以联系管理员补充知识库。"
-                answer_parts.append(answer)
+                answer_parts = [answer]
+                yield AgentStreamEvent(
+                    type="status",
+                    stage="generating",
+                    label="组织最终答案",
+                    detail="未检索到有效信息，执行安全拒答",
+                    phase="start",
+                )
                 yield AgentStreamEvent(type="delta", content=answer)
                 break
 
