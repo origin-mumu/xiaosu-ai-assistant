@@ -1,46 +1,57 @@
-# 钉钉 Stream 机器人接入
+# 钉钉 Stream 长连接机器人接入指南
 
-## 1. 创建应用
+本项目采用钉钉官方最新的 **Stream 模式（长连接 WebSocket）**，机器人主动向钉钉开放平台建立双向长连接，**完全无需公网 IP、无需域名、无需内网穿透**，本机或 Docker 容器即可直接稳定运行。
 
-1. 登录钉钉开放平台，进入开发者后台。
-2. 在测试组织中创建“企业内部应用”。
-3. 应用名称可填写“小苏企业智能助手”，描述可填写“查询公司制度、员工、考勤和订单数据的内部 AI 助手”。
-4. 在应用能力中添加机器人，消息接收模式选择 **Stream 模式**。
-5. 保存应用的 Client ID 与 Client Secret，只写入本机 `.env`。
+---
 
-## 2. 权限与版本
+## 一、钉钉开发者后台配置步骤
 
-启用机器人收发消息所需权限，在“版本管理与发布”中新建版本，选择可见范围并发布。未发布版本时，后台修改不会对测试组织生效。
+1. **创建企业内部应用**：
+   - 登录 [钉钉开放平台](https://open-dev.dingtalk.com/) ➡️ 进入 **「开发者后台」** ➡️ 选择企业组织 ➡️ 点击 **「创建内部应用」**。
+   - 应用名称填写 `小苏企业智能助手`，应用描述填写 `企业制度、员工、考勤与订单智能问答助手`。
+2. **添加机器人能力**：
+   - 在应用详情左侧导航栏点击 **「添加应用能力」** ➡️ 选择 **「机器人」** 并确认添加。
+   - 在机器人配置页面中，消息接收模式必须选择 **【Stream 模式】**（无需填写任何公网 Webhook 回调地址）。
+3. **获取凭证信息**：
+   - 进入 **「凭证与基础信息」** 页面，复制 **`AppKey` (即 Client ID)** 与 **`AppSecret` (即 Client Secret)**。
+4. **发布应用版本**：
+   - 在 **「版本管理与发布」** 中创建新版本，设置使用范围为“全部员工”或测试部门，点击发布上线。
 
-## 3. 本地配置
+---
+
+## 二、项目本地配置 (`.env`)
+
+在项目根目录的 `.env` 中填入钉钉凭证：
 
 ```dotenv
-DINGTALK_CLIENT_ID=dingxxxxxxxx
-DINGTALK_CLIENT_SECRET=xxxxxxxx
-PUBLIC_BASE_URL=https://demo.example.com
+# 钉钉应用 AppKey 与 AppSecret
+DINGTALK_CLIENT_ID=dingxxxxxxxxxxxxxxxx
+DINGTALK_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# 前端 Web 访问根地址（用于在钉钉中生成可点击的原文定位直达链接）
+PUBLIC_BASE_URL=http://localhost:5173
 ```
 
-`PUBLIC_BASE_URL` 用于把知识引用转换成钉钉中可点击的管理后台链接。本地联调可以保留 `http://localhost:5173`，但其他人的钉钉客户端无法访问你的 localhost。
+---
 
-## 4. 启动和验证
+## 三、启动与运行状态检查
 
-```bash
-docker compose --profile dingtalk up --build -d
-docker compose logs -f bot
-```
+1. **一键启动机器人服务**：
+   ```bash
+   docker compose --profile dingtalk up -d --build bot
+   ```
+2. **查看机器人连接与运行日志**：
+   ```bash
+   docker compose logs -f bot
+   ```
+   当看到 `[Stream] connected to dingtalk gateway successfully` 时，即代表已成功连接钉钉云端网关。
+3. **管理后台心跳监测**：
+   - 登录 Web 管理后台 ➡️ **「系统设置」** 页面；
+   - 查看「钉钉 IM 集成」卡片，系统会实时展示 **凭证状态（已配置）**、**运行状态（正在运行）** 以及 **最近心跳时间**。
 
-日志出现 `Starting DingTalk Stream client` 表示开始连接。在钉钉中私聊机器人或在群中 @ 小苏，依次测试：
+---
 
-1. `员工 001 是哪个部门的？`
-2. `他上周来上班几天？`
-3. `员工每年有几天年假？`
-4. `现在几点？`
+## 四、钉钉群聊与单聊测试
 
-## 5. 常见问题
-
-- 收不到消息：确认机器人版本已发布、可见范围包含测试用户、Stream 模式已开启。
-- 一直提示模型异常：检查 `DASHSCOPE_API_KEY` 与 Base URL 是否属于同一地域。
-- 引用打不开：将 `PUBLIC_BASE_URL` 改成钉钉客户端可访问的 HTTPS 域名。
-- 修改 `.env` 不生效：执行 `docker compose --profile dingtalk up -d --force-recreate api bot`。
-
-参考：[钉钉 Stream SDK Python](https://github.com/open-dingtalk/dingtalk-stream-sdk-python)。
+1. **单聊测试**：在钉钉工作台搜索 `小苏企业智能助手`，直接发送：“公司员工有几天年假？”、“张伟上周出勤了几天？”。
+2. **群聊测试**：将机器人拉入企业内部群聊，在群内 `@小苏企业智能助手` 发送提问，机器人将自动调用相关知识库/内部系统工具，并携带高亮原文链接进行结构化回复。

@@ -6,11 +6,12 @@ from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from xiaosu.agent.model import ChatModel, DashScopeChatModel
+from xiaosu.agent.model import ChatModel, create_chat_model
 from xiaosu.agent.runner import AgentRunner
 from xiaosu.agent.schemas import ChatRequest, ChatResponse
 from xiaosu.agent.tools import AgentToolExecutor
 from xiaosu.core.config import Settings
+from xiaosu.core.runtime import load_runtime_configuration
 from xiaosu.db.base import utc_now
 from xiaosu.db.models import Conversation, Message
 
@@ -27,6 +28,7 @@ class ChatService:
         self.model = model
 
     async def chat(self, request: ChatRequest) -> ChatResponse:
+        await load_runtime_configuration(self.session, self.settings)
         started = perf_counter()
         conversation = await self._conversation(request)
         history = await self._history(conversation.id)
@@ -40,7 +42,7 @@ class ChatService:
         )
         await self.session.commit()
         try:
-            model = self.model or DashScopeChatModel(self.settings)
+            model = self.model or create_chat_model(self.settings)
             runner = AgentRunner(
                 model,
                 AgentToolExecutor(self.session, self.settings),
@@ -108,6 +110,7 @@ class ChatService:
             )
 
     async def stream_chat(self, request: ChatRequest) -> AsyncIterator[dict[str, object]]:
+        await load_runtime_configuration(self.session, self.settings)
         started = perf_counter()
         conversation = await self._conversation(request)
         history = await self._history(conversation.id)
@@ -121,7 +124,7 @@ class ChatService:
         )
         await self.session.commit()
         try:
-            model = self.model or DashScopeChatModel(self.settings)
+            model = self.model or create_chat_model(self.settings)
             runner = AgentRunner(
                 model,
                 AgentToolExecutor(self.session, self.settings),
@@ -133,6 +136,8 @@ class ChatService:
                         "type": "status",
                         "stage": event.stage or "working",
                         "label": event.label or "正在处理",
+                        "detail": event.detail,
+                        "phase": event.phase,
                     }
                     continue
                 if event.type == "delta":

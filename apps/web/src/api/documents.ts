@@ -36,6 +36,20 @@ export interface Citation {
   score: number
 }
 
+export interface OriginalSegment {
+  index: number
+  content: string
+  section_title: string | null
+  page_number: number | null
+  paragraph_number: number | null
+}
+
+export interface DocumentPreview {
+  filename: string
+  mime_type: string
+  segments: OriginalSegment[]
+}
+
 export function listDocuments(): Promise<DocumentItem[]> {
   return apiRequest('/documents')
 }
@@ -56,6 +70,14 @@ export function reindexDocument(id: string): Promise<DocumentItem> {
 
 export function listChunks(id: string): Promise<DocumentChunk[]> {
   return apiRequest(`/documents/${id}/chunks`)
+}
+
+export function previewDocument(id: string): Promise<DocumentPreview> {
+  return apiRequest(`/documents/${id}/preview`)
+}
+
+export function originalFileUrl(id: string): string {
+  return `/api/v1/documents/${id}/file`
 }
 
 export function searchKnowledge(query: string): Promise<{ citations: Citation[] }> {

@@ -104,9 +104,16 @@ async def test_agent_streams_native_model_deltas_and_auditable_statuses() -> Non
     assert "".join(event.content for event in events if event.type == "delta") == (
         "员工 001 属于研发部。"
     )
-    assert any(event.stage == "tool" and "员工" in (event.label or "") for event in events)
+    tool_events = [event for event in events if (event.stage or "").startswith("tool:")]
+    assert [event.phase for event in tool_events] == ["start", "complete"]
+    assert tool_events[0].tool_name == "get_employee"
+    assert tool_events[0].arguments == {"employee_id": "001"}
+    assert tool_events[1].tool_result == {
+        "found": True,
+        "employee": {"id": "001", "department": "研发部"},
+    }
     stages = [event.stage for event in events if event.type == "status"]
-    assert stages == ["understanding", "tool", "generating"]
+    assert stages == ["understanding", "tool:call-stream", "tool:call-stream", "generating"]
     result = events[-1].result
     assert result is not None
     assert result.tool_calls[0]["name"] == "get_employee"

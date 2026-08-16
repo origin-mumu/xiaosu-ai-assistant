@@ -2,22 +2,24 @@
 import { ChatDotRound, CircleCheck, Document, Warning } from '@element-plus/icons-vue'
 import { computed, onMounted, ref } from 'vue'
 
-import { listMessages, type MessageLog } from '@/api/admin'
+import { listMessages, type QuestionAnswerLog } from '@/api/admin'
 import { listDocuments, type DocumentItem } from '@/api/documents'
 import { fetchDependencyHealth, type DependencyHealth } from '@/api/health'
 
 const documents = ref<DocumentItem[]>([])
-const messages = ref<MessageLog[]>([])
+const exchanges = ref<QuestionAnswerLog[]>([])
 const health = ref<DependencyHealth | null>(null)
 const loading = ref(true)
 const errorMessage = ref('')
 const todayCount = computed(() => {
   const today = new Date().toDateString()
-  return messages.value.filter(
-    (item) => item.role === 'user' && new Date(item.created_at).toDateString() === today,
+  return exchanges.value.filter(
+    (item) => new Date(item.question.created_at).toDateString() === today,
   ).length
 })
-const failedCount = computed(() => messages.value.filter((item) => item.status !== 'completed').length)
+const failedCount = computed(() => exchanges.value.filter(
+  (item) => (item.answer?.status ?? 'unanswered') !== 'completed',
+).length)
 
 onMounted(async () => {
   try {
@@ -27,7 +29,7 @@ onMounted(async () => {
       fetchDependencyHealth(),
     ])
     documents.value = documentItems
-    messages.value = messagePage.items
+    exchanges.value = messagePage.items
     health.value = dependencyHealth
   } catch (error: unknown) {
     errorMessage.value = error instanceof Error ? error.message : '加载失败'

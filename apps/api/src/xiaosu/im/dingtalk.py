@@ -5,6 +5,7 @@ from dingtalk_stream import AckMessage, CallbackMessage, ChatbotHandler, Chatbot
 
 from xiaosu.agent.schemas import ChatRequest
 from xiaosu.agent.service import ChatService
+from xiaosu.agent.sources import format_im_sources
 from xiaosu.core.config import Settings
 from xiaosu.db.session import session_factory
 
@@ -35,7 +36,12 @@ class XiaosuDingTalkHandler(ChatbotHandler):
             request = to_chat_request(incoming)
             async with session_factory() as session:
                 result = await ChatService(session, self.settings).chat(request)
-            markdown = _absolute_links(result.answer, self.settings.public_base_url)
+            sources = format_im_sources(
+                result.citations,
+                result.tool_calls,
+                self.settings.public_base_url,
+            )
+            markdown = result.answer if not sources else f"{result.answer}\n\n{sources}"
             await asyncio.to_thread(
                 self.reply_markdown,
                 "小苏企业智能助手",
@@ -58,4 +64,5 @@ class XiaosuDingTalkHandler(ChatbotHandler):
 
 
 def _absolute_links(markdown: str, base_url: str) -> str:
+    """Keep compatibility for previously stored answers containing relative source links."""
     return markdown.replace("](/documents/", f"]({base_url.rstrip('/')}/documents/")

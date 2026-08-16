@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChatDotRound, Clock, Document, Grid, Setting, SwitchButton, User } from '@element-plus/icons-vue'
+import { ChatDotRound, Clock, Document, Grid, Setting, SwitchButton, Tools, User } from '@element-plus/icons-vue'
 import { computed } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 
@@ -18,6 +18,7 @@ const menuItems = [
   { path: '/dashboard', label: '系统概览', icon: Grid },
   { path: '/documents', label: '文档管理', icon: Document },
   { path: '/conversations', label: '对话日志', icon: Clock },
+  { path: '/tools', label: '工具管理', icon: Tools },
   { path: '/chat', label: '调试聊天', icon: ChatDotRound },
   { path: '/settings', label: '系统设置', icon: Setting },
 ]

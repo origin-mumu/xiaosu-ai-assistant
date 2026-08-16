@@ -11,14 +11,9 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
 from PIL import Image
-from reportlab.lib.colors import HexColor
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.utils import ImageReader
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfgen import canvas
+from sample_pdf import generate_pdf
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT / "data" / "documents"
 BLUE = RGBColor(74, 93, 230)
 DARK_BLUE = RGBColor(25, 39, 75)
@@ -419,7 +414,7 @@ def generate_docx(banner: bytes) -> None:
         "提交时限\n返程后 10 个工作日",
         "咨询渠道\n财务共享中心",
     )
-    for cell, label in zip(table.rows[0].cells, labels):
+    for cell, label in zip(table.rows[0].cells, labels, strict=True):
         _set_cell_shading(cell, "EEF1FF")
         paragraph = cell.paragraphs[0]
         paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -449,100 +444,13 @@ def generate_docx(banner: bytes) -> None:
     document.save(OUTPUT / "差旅与报销制度.docx")
 
 
-def register_pdf_font() -> str:
-    candidates = (
-        Path("C:/Windows/Fonts/simhei.ttf"),
-        Path("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"),
-    )
-    for candidate in candidates:
-        if candidate.exists():
-            pdfmetrics.registerFont(TTFont("XiaosuCJK", str(candidate), subfontIndex=0))
-            return "XiaosuCJK"
-    raise RuntimeError("未找到可用于生成中文 PDF 的字体")
-
-
-def draw_wrapped_text(
-    pdf: canvas.Canvas,
-    text: str,
-    *,
-    x: float,
-    y: float,
-    width: float,
-    font: str,
-    size: float,
-    leading: float,
-) -> float:
-    line = ""
-    lines: list[str] = []
-    for character in text:
-        candidate = line + character
-        if pdfmetrics.stringWidth(candidate, font, size) <= width:
-            line = candidate
-        else:
-            lines.append(line)
-            line = character
-    if line:
-        lines.append(line)
-    pdf.setFont(font, size)
-    for content in lines:
-        pdf.drawString(x, y, content)
-        y -= leading
-    return y
-
-
-def generate_pdf(
-    filename: str, title: str, subtitle: str, sections: dict[str, str], banner: bytes
-) -> None:
-    font = register_pdf_font()
-    pdf = canvas.Canvas(str(OUTPUT / filename), pagesize=letter, pageCompression=1)
-    pdf.setTitle(title)
-    pdf.setAuthor("小苏企业知识库")
-    pdf.setSubject(subtitle)
-    image = ImageReader(io.BytesIO(banner))
-
-    pdf.drawImage(
-        image, 42, 568, width=528, height=182, preserveAspectRatio=False, mask="auto"
-    )
-    pdf.setFillColor(HexColor("#F7F8FF"))
-    pdf.setStrokeColor(HexColor("#E5E8F5"))
-    pdf.roundRect(42, 142, 528, 382, 16, stroke=1, fill=1)
-    pdf.setFillColor(HexColor("#19274B"))
-    pdf.setFont(font, 25)
-    pdf.drawString(72, 450, title)
-    pdf.setFillColor(HexColor("#59698F"))
-    pdf.setFont(font, 13)
-    pdf.drawString(72, 405, subtitle)
-    pdf.setFont(font, 10)
-    pdf.drawString(72, 208, "小苏企业知识库｜内部参考资料｜2026 年 8 月")
-    pdf.showPage()
-
-    for page_number, (heading, body) in enumerate(sections.items(), start=2):
-        pdf.setFillColor(HexColor("#4A5DE6"))
-        pdf.roundRect(42, 680, 528, 70, 14, stroke=0, fill=1)
-        pdf.setFillColor(HexColor("#FFFFFF"))
-        pdf.setFont(font, 18)
-        pdf.drawString(66, 706, heading)
-        pdf.setFillColor(HexColor("#1F2B49"))
-        draw_wrapped_text(
-            pdf, body, x=66, y=620, width=480, font=font, size=12.5, leading=25
-        )
-        pdf.setStrokeColor(HexColor("#DCE0EC"))
-        pdf.line(66, 96, 546, 96)
-        pdf.setFillColor(HexColor("#7B879F"))
-        pdf.setFont(font, 8.5)
-        pdf.drawString(66, 74, "小苏企业知识库 · 可检索原文")
-        pdf.drawRightString(546, 74, str(page_number))
-        pdf.showPage()
-
-    pdf.save()
-
-
 def main() -> None:
     OUTPUT.mkdir(parents=True, exist_ok=True)
     banner = _banner_jpeg()
     write_text_documents()
     generate_docx(banner)
     generate_pdf(
+        OUTPUT,
         "IT设备与账号管理指南.pdf",
         "IT 设备与账号管理指南",
         "设备签收、账号权限、报修与归还流程",
@@ -550,6 +458,7 @@ def main() -> None:
         banner,
     )
     generate_pdf(
+        OUTPUT,
         "销售与客户服务规范.pdf",
         "销售与客户服务规范",
         "CRM、报价、合同、投诉与销售统计口径",

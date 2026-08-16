@@ -13,7 +13,8 @@ from xiaosu.api.mock import router as mock_router
 from xiaosu.core.config import get_settings
 from xiaosu.core.logging import setup_logging
 from xiaosu.core.middleware import RequestContextMiddleware
-from xiaosu.db.session import close_database, init_database
+from xiaosu.core.runtime import load_runtime_configuration
+from xiaosu.db.session import close_database, init_database, session_factory
 
 
 @asynccontextmanager
@@ -21,6 +22,8 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     setup_logging(settings.log_dir)
     await init_database()
+    async with session_factory() as session:
+        await load_runtime_configuration(session, settings)
     yield
     await close_database()
 

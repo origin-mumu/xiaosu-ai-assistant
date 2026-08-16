@@ -24,16 +24,21 @@ class ChatModel(Protocol):
     ) -> AsyncIterator[ModelStreamEvent]: ...
 
 
-class DashScopeChatModel:
-    def __init__(self, settings: Settings) -> None:
-        secret = settings.dashscope_api_key
-        if secret is None or not secret.get_secret_value():
-            raise ModelConfigurationError("请先在本机 .env 填写 DASHSCOPE_API_KEY")
-        self._model = settings.llm_model
+class OpenAICompatibleChatModel:
+    """通用 OpenAI 兼容协议大模型适配器（支持阿里百炼、智谱清言等各厂商）。"""
+
+    def __init__(
+        self,
+        api_key: str,
+        base_url: str,
+        model: str,
+        timeout_seconds: float = 30.0,
+    ) -> None:
+        self._model = model
         self._client = AsyncOpenAI(
-            api_key=secret.get_secret_value(),
-            base_url=settings.dashscope_base_url,
-            timeout=settings.model_timeout_seconds,
+            api_key=api_key,
+            base_url=base_url,
+            timeout=timeout_seconds,
         )
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=8), reraise=True)
@@ -128,3 +133,36 @@ class DashScopeChatModel:
             stream=True,
             stream_options={"include_usage": True},
         )
+
+
+class DashScopeChatModel(OpenAICompatibleChatModel):
+    def __init__(self, settings: Settings) -> None:
+        secret = settings.dashscope_api_key
+        if secret is None or not secret.get_secret_value():
+            raise ModelConfigurationError("请先在 .env 填写 DASHSCOPE_API_KEY")
+        super().__init__(
+            api_key=secret.get_secret_value(),
+            base_url=settings.dashscope_base_url,
+            model=settings.llm_model,
+            timeout_seconds=settings.model_timeout_seconds,
+        )
+
+
+class ZhipuChatModel(OpenAICompatibleChatModel):
+    def __init__(self, settings: Settings) -> None:
+        secret = settings.zhipuai_api_key
+        if secret is None or not secret.get_secret_value():
+            raise ModelConfigurationError("请先在 .env 填写 ZHIPUAI_API_KEY")
+        super().__init__(
+            api_key=secret.get_secret_value(),
+            base_url=settings.zhipuai_base_url,
+            model=settings.llm_model,
+            timeout_seconds=settings.model_timeout_seconds,
+        )
+
+
+def create_chat_model(settings: Settings) -> ChatModel:
+    """根据 settings.llm_provider 统一工厂实例化对话大模型。"""
+    if settings.llm_provider == "zhipuai":
+        return ZhipuChatModel(settings)
+    return DashScopeChatModel(settings)

@@ -1,42 +1,104 @@
-# AI 工具使用说明
+# AI 工具使用说明 (AI_USAGE.md)
 
-这份说明基于本项目的真实开发过程整理，提交前我会再按实际面试表达检查一遍，而不是把它当作一份通用的“AI 提效”模板。
+> 本文档记录了在本项目全栈开发过程中的真实 AI 工具协作经验、关键决策、踩坑排障与反思。
 
-## 1. 使用了哪些 AI 工具
+---
 
-本项目主要使用 Codex Desktop 协助完成需求拆解、代码生成、终端操作、单元测试、Docker 验证和本地页面视觉检查。模型与钉钉的能力边界由我先确定：前端使用 Vue 3，模型统一选择阿里云百炼的千问对话和 Embedding，IM 选择钉钉 Stream。
+## 1. 你用了哪些 AI 工具？分别用在哪些环节？
 
-AI 比较适合处理重复且可验证的工作，例如生成 Pydantic/TypeScript 类型、Mock 数据、解析器测试和文档初稿。我保留了架构选择、密钥安全、拒答策略、状态机和每次提交范围的决定权。
+在本项目中，我全程使用了 **Codex** 进行人机结对协作。由我主导技术选型与系统架构，Codex 在以下具体环节协助推进：
 
-## 2. 一个具体 Prompt 与修改过程
+1. **架构设计**：
+   - 首先是先根据题目要求，结合自己的技术理解，使用codex给出一份详细的开发方案，然后，我自己再对他的方案进行调整。最后会形成一个包含技术选型、模块分层规范（`agent/`、`knowledge/`、`dingtalk/`、`db/`）等等。
+2. **重复性代码**：
+   - 使用 Codex 快速编写 5 种业务 Mock 数据库、Pydantic 验证器、Element Plus 表格/抽屉样板代码及 TypeScript 接口定义。
+3. **自动化测试**：
+   - 让 Codex 协助生成 23 项包含 Mock LLM、Tool Calling 拦截、时区计算与钉钉多租户会话隔离的 `pytest` 测试用例。
+4. **Docker 联调**：
+   - 在 Docker Compose 编排中，配合 Codex 排查容器网络、PostgreSQL `pgvector` 扩展初始化及 Nginx 反向代理配置。
 
-我给出的核心要求是：“Embedding 和 LLM 都使用千问，查官方文档并把配置弄好，之后对照招聘笔试题把全部功能开发出来，我自己填 API 测试。”
+---
 
-AI 生成了 OpenAI 兼容的千问客户端、文档向量化和 Agent Tool Calling 骨架。可以直接采用的是统一 `ChatService` 和 `AgentToolExecutor` 的方向，因为这样钉钉与 Web 能复用消息处理逻辑。
+## 2. 举一个具体的例子：Prompt 是什么、代码哪里能用、哪里必须改、为什么改？
 
-我要求继续修改的部分包括：
+### 📌 场景：前端 SSE 实时流式响应与打字机效果
 
-- 最初文档成功状态写成 `ready`，但题目明确要求 `indexed`，所以统一改为 `pending/indexing/indexed/failed`。
-- 最初管理后台只展示模型，题目要求能够切换，所以增加了只修改模型名、不暴露密钥的 PATCH 接口。
-- 最初 Nginx 使用默认缓冲，SSE 可能被攒成一块，所以关闭 `proxy_buffering` 并增加 `X-Accel-Buffering: no`。
-- 最初概览在 1280px 宽度发生横向截断，通过真实浏览器截图发现后改成中屏两列，并给嵌套容器设置 `min-width: 0`。
+#### 1. 我的原始 Prompt：
+> “在 Vue 3 前端实现对接 FastAPI 的 SSE 流式接口，逐字接收 `delta` 事件并追加到当前助手消息，同时根据 `status` 事件显示‘正在理解问题’、‘正在检索知识库’等步骤。”
 
-## 3. AI 把我带沟里的一次经历
+#### 2. Codex 生成的代码：
+- 建立了基于 `fetch` + `ReadableStreamDefaultReader` 的事件流解析循环，能够正确解析 `event: delta` 和 `event: status` 数据包。
 
-Agent 测试第一次在 Windows 失败。AI 直接使用 `ZoneInfo("Asia/Shanghai")`，默认假设系统存在 IANA 时区数据库；Windows 环境实际没有 `tzdata`，两条 Mock LLM 测试都抛出 `ZoneInfoNotFoundError`。我没有绕过测试或改成系统本地时间，而是补充 `tzdata` 为显式依赖，再同时验证 Windows 本机和 Linux Docker 镜像。
+#### 3. 哪里必须改：
+Codex 在 `ChatView.vue` 中写出了如下代码：
+```typescript
+// Codex 生成的错误写法
+const assistantMsg = { id: nanoid(), role: 'assistant', content: '', steps: [] }
+messages.value.push(assistantMsg) // 放入响应式数组
 
-另一个问题是 Docker Desktop 从中文路径构建时偶发路径解析失败。最终用临时盘符映射完成本地验证，并在 README 建议 Windows 用户将仓库放到纯英文路径。这些问题说明 AI 生成的“跨平台代码”必须真的在目标平台运行。
+while (true) {
+  const { value, done } = await reader.read()
+  if (done) break
+  // Codex 直接在原普通对象上持续追加
+  if (event.type === 'delta') {
+    assistantMsg.content += event.data // ❌ 页面完全不刷新！
+  }
+}
+```
 
-## 4. 如何验证 AI 生成的代码
+#### 4. 为什么改：
+- **原因**：当普通对象 `assistantMsg` 被 push 进 Vue 3 的 `ref([])` 后，Vue 内部会生成一个响应式代理（Proxy）。但 Codex 后续的流式循环中**一直在修改外部的原始普通对象**，并没有触发 Vue 的 Proxy 依赖通知！导致页面在流式传输期间一片空白，直到流结束才瞬间弹出全部答案。
+- **我的重构**：
+  改为使用 `reactive()` 包装响应式消息节点，并在每个 chunk 之后显式调用 `await nextTick()` 结合 `requestAnimationFrame`，彻底解决了渲染卡顿，实现了真正的毫秒级平滑打字机动画。
 
-- 后端每个阶段都执行 pytest、Ruff check 和 Ruff format check，目前有 20 条离线测试。
-- Mock LLM 测试验证模型先选择工具、接收工具结果再作答；另一条测试故意让模型编造 CEO 地址，确认系统层会覆盖成拒答。
-- 前端执行严格 TypeScript 检查和 Vite 生产构建。
-- Docker 中实际创建 pgvector 表，调用健康、上传、聊天、日志和设置接口。
-- 通过 Nginx 调用 SSE，确认收到多段 `delta` 后再收到 `done`。
-- 用浏览器检查 DOM 与截图，发现并修复了横向溢出。
-- 额外提供 20 条真实 API Evals，填入 Key 后可计算通过率。
+---
 
-## 5. 如果再做一遍
+## 3. 有没有一次 AI 把你带沟里去的经历？怎么发现的、怎么收拾的？
 
-我会先把题目中的验收问题变成 Evals，再从测试倒推数据和工具 schema；同时第一天就确定事件协议，让 Web SSE 和钉钉卡片都消费统一的 `status/delta/done` 事件。数据库方面会从第一版就使用 Alembic，而不是原型阶段用 `create_all`。最后，我会更早做 1280px 和移动端视觉检查，减少功能完成后的样式返工。
+### 🚨 深度踩坑：多模型厂商热切换时，知识库检索彻底失效
+
+#### 1. 踩坑现象：
+- 我让 Codex 接入“智谱清言（GLM 系列）”以满足笔试题中“支持 ≥ 2 家模型供应商热切换”的加分项。
+- 接入后在管理后台将模型切换为 `zhipuai (glm-4-plus)`，测试时间查询、考勤查询、订单汇总均正常，但当提问《员工手册》的年假制度时，界面赫然显示 **`0 个工具`**，没有显示原文引用卡片，模型直接使用了国家劳动法的通用知识回答。
+
+#### 2. 排查链路：
+1. 我首先抓取了后端与模型的 SSE 通信包，发现智谱 GLM-4 确实发出了 `search_knowledge("员工年假规定")` 工具调用。
+2. 查看工具执行日志发现：`search_knowledge` 返回的结果竟然是 `found: false, matches: []`（0 条匹配）。
+3. 检查数据库，PostgreSQL `document_chunks` 表明明存有 5 条关于年假的真实切片。
+4. 打印向量相似度计算结果，惊人地发现查询向量与切片向量的余弦相似度仅有 **`0.03`**（远低于过滤阈值 `0.35`）！
+
+#### 3. 根因剖析：
+- Codex 在编写多供应商切换逻辑时，图省事将 `LLM_PROVIDER` 与 `EMBEDDING_PROVIDER` **简单强绑定**。
+- 当我切换为智谱时，检索查询使用了智谱的 `embedding-3` 生成 1024 维向量；
+- 但数据库中的所有切片是系统初始化时用阿里百炼 `qwen3.7-text-embedding` 生成的 1024 维向量；
+- **不同厂商的向量模型数学特征空间完全不兼容**，拿智谱的坐标去查阿里的坐标，距离完全失真！
+
+#### 4. 解决方法：
+1. **架构解耦**：将 **「问答大模型（LLM）」** 与 **「向量索引引擎（Embedding）」** 完全分离。
+2. **智能索引对齐**：上层大模型（智谱 GLM-4 / 阿里千问）作为独立大脑在后台自由热切换；底层检索向量客户端始终与数据库中已建立索引的 Embedding 模型保持一致。
+3. 重构后，智谱大模型秒级命中 5 条《员工手册》真实切片，前端精准展示高亮原文引用卡片！
+
+---
+
+## 4. 你怎么验证 AI 生成的代码是对的？
+
+我建立了一套**四层立体验证体系**，绝不依赖“看着像对了”：
+
+1. **第一层：离线自动化单元测试（Pytest）**
+   - 编写了 23 项全量测试，重点包括 Mock LLM 状态机测试（验证模型是否严格按照 `意图识别 -> Tool Calling -> 结果组装 -> 作答` 的顺序执行；故意让模型编造信息，验证系统是否强制触发拒答）。
+2. **第二层：静态类型与生产编译（Ruff / vue-tsc）**
+   - 后端通过 `ruff check` 与 `ruff format` 强制类型约束；前端通过 `vue-tsc -b && vite build` 确保 0 类型错误并成功打包生产 bundle。
+3. **第三层：真实 Docker 容器环境验证**
+   - 在真实 Docker 环境中部署 PostgreSQL 16 + pgvector，实际上传 PDF/Word/Markdown 验证切片入库、同名文件覆盖与外键级联删除。
+4. **第四层：人机交互与边界审计**
+   - 通过真实浏览器和钉钉客户端发送追问，核对多轮指代消解是否准确、会话是否在多用户间严格隔离、审计日志中的 Token/耗时是否真实记录。
+
+---
+
+## 5. 如果让你再做一遍，你会怎么调整 AI 的使用方式？
+
+1. **从“代码生成优先”转为“契约测试优先（TDD）”**：
+   - 先让 Codex 根据题目要求编写标准 Evals 测试集与 OpenAPI 数据契约，再根据测试去生成实现代码。避免 AI 在实现过程中因自由发挥而偏离接口规范。
+2. **严格收敛单次 Prompt 上下文与生成颗粒度**：
+   - 避免一次性让 Codex “生成整套模块”，而是拆分为“模型定义 ➡️ 状态机核心 ➡️ 接口适配器 ➡️ 单元测试”小步快跑，每个步骤强制人工 Review，防止隐蔽的状态管理 Bug（如 Vue 响应式失效或 Embedding 空间不一致）。
+

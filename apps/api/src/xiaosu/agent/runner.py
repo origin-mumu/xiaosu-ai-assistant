@@ -1,11 +1,13 @@
 import json
 from collections.abc import AsyncIterator, Sequence
 from datetime import datetime
+from time import perf_counter
 from zoneinfo import ZoneInfo
 
 from xiaosu.agent.model import ChatModel
 from xiaosu.agent.prompts import system_prompt
 from xiaosu.agent.schemas import AgentResult, AgentStreamEvent, ModelTurn
+from xiaosu.agent.sources import tool_display_name
 from xiaosu.agent.tools import TOOL_DEFINITIONS, AgentToolExecutor
 
 
@@ -60,8 +62,8 @@ class AgentRunner:
                 }
             )
             for call in turn.tool_calls:
-                result = await self.tools.execute(call.name, call.arguments)
-                call_logs.append({"name": call.name, "arguments": call.arguments, "result": result})
+                result, log = await self._execute_tool(call.name, call.arguments)
+                call_logs.append(log)
                 messages.append(
                     {
                         "role": "tool",
@@ -74,8 +76,6 @@ class AgentRunner:
         if self.tools.knowledge_search_attempted and not self.tools.citations:
             answer = "文档里没找到相关信息，我不能根据猜测作答。你可以联系管理员补充知识库。"
             result_status = "unanswered"
-        elif self.tools.citations:
-            answer = f"{answer}\n\n{_citation_markdown(self.tools.citations)}"
         return AgentResult(
             answer=answer,
             citations=self.tools.citations,
@@ -101,11 +101,23 @@ class AgentRunner:
         answer_parts: list[str] = []
         answer = "抱歉，我暂时无法完成这个请求。"
 
-        yield AgentStreamEvent(type="status", stage="understanding", label="正在理解问题")
+        yield AgentStreamEvent(
+            type="status",
+            stage="understanding",
+            label="理解用户问题",
+            detail="分析意图、上下文与需要的数据来源",
+            phase="start",
+        )
         for step in range(self.max_steps):
             generating_status_sent = False
             if step:
-                yield AgentStreamEvent(type="status", stage="generating", label="正在组织答案")
+                yield AgentStreamEvent(
+                    type="status",
+                    stage="generating",
+                    label="组织最终答案",
+                    detail="结合工具返回结果生成回复",
+                    phase="start",
+                )
                 generating_status_sent = True
             turn: ModelTurn | None = None
             async for event in self.model.stream(messages, TOOL_DEFINITIONS):
@@ -114,7 +126,9 @@ class AgentRunner:
                         yield AgentStreamEvent(
                             type="status",
                             stage="generating",
-                            label="正在组织答案",
+                            label="组织最终答案",
+                            detail="结合工具返回结果生成回复",
+                            phase="start",
                         )
                         generating_status_sent = True
                     answer_parts.append(event.content)
@@ -131,6 +145,9 @@ class AgentRunner:
                     answer_parts.append(answer)
                     yield AgentStreamEvent(type="delta", content=answer)
                 break
+            else:
+                # 触发工具调用时，清空之前过渡性的前置思考流式内容，确保最终正文纯净
+                answer_parts.clear()
 
             messages.append(
                 {
@@ -150,19 +167,35 @@ class AgentRunner:
                 }
             )
             for call in turn.tool_calls:
+                display_name = tool_display_name(call.name)
+                stage = f"tool:{call.id}"
                 yield AgentStreamEvent(
                     type="status",
-                    stage="tool",
-                    label=_tool_label(call.name),
+                    stage=stage,
+                    label=f"调用工具：{display_name}",
+                    detail="正在连接内部系统并查询所需数据",
+                    phase="start",
+                    tool_name=call.name,
+                    arguments=call.arguments,
                 )
-                result = await self.tools.execute(call.name, call.arguments)
-                call_logs.append({"name": call.name, "arguments": call.arguments, "result": result})
+                result, log = await self._execute_tool(call.name, call.arguments)
+                call_logs.append(log)
                 messages.append(
                     {
                         "role": "tool",
                         "tool_call_id": call.id,
                         "content": json.dumps(result, ensure_ascii=False),
                     }
+                )
+                yield AgentStreamEvent(
+                    type="status",
+                    stage=stage,
+                    label=f"工具完成：{display_name}",
+                    detail=_result_summary(result),
+                    phase="complete",
+                    tool_name=call.name,
+                    arguments=call.arguments,
+                    tool_result=result,
                 )
 
             if self.tools.knowledge_search_attempted and not self.tools.citations:
@@ -177,10 +210,6 @@ class AgentRunner:
             if self.tools.knowledge_search_attempted and not self.tools.citations
             else "completed"
         )
-        if self.tools.citations:
-            citation_text = f"\n\n{_citation_markdown(self.tools.citations)}"
-            answer += citation_text
-            yield AgentStreamEvent(type="delta", content=citation_text)
         yield AgentStreamEvent(
             type="done",
             result=AgentResult(
@@ -193,35 +222,32 @@ class AgentRunner:
             ),
         )
 
-
-def _citation_markdown(citations: list) -> str:
-    lines = ["**参考来源**"]
-    for index, citation in enumerate(citations, start=1):
-        location = []
-        if citation.section_title:
-            location.append(citation.section_title)
-        if citation.page_number:
-            location.append(f"第 {citation.page_number} 页")
-        if citation.paragraph_start:
-            location.append(f"第 {citation.paragraph_start} 段")
-        label = " · ".join(location) or "原文片段"
-        lines.append(
-            f"{index}. [{citation.filename} · {label}]"
-            f"(/documents/{citation.document_id}?chunk={citation.chunk_id})"
-        )
-        excerpt = " ".join(citation.content.split())
-        if len(excerpt) > 180:
-            excerpt = f"{excerpt[:180]}…"
-        lines.append(f"   > {excerpt}")
-    return "\n".join(lines)
+    async def _execute_tool(
+        self,
+        name: str,
+        arguments: dict[str, object],
+    ) -> tuple[dict[str, object], dict[str, object]]:
+        started = perf_counter()
+        result = await self.tools.execute(name, arguments)
+        duration_ms = int((perf_counter() - started) * 1000)
+        success = "error" not in result
+        return result, {
+            "name": name,
+            "arguments": arguments,
+            "result": result,
+            "duration_ms": duration_ms,
+            "success": success,
+        }
 
 
-def _tool_label(name: str) -> str:
-    return {
-        "search_knowledge": "正在检索知识库",
-        "find_employee": "正在按姓名查找员工",
-        "get_employee": "正在查询员工信息",
-        "query_attendance": "正在查询考勤系统",
-        "query_orders": "正在汇总订单数据",
-        "get_current_time": "正在读取当前时间",
-    }.get(name, "正在调用内部工具")
+def _json_preview(value: object, limit: int = 120) -> str:
+    text = json.dumps(value, ensure_ascii=False, separators=(", ", ": "))
+    return text if len(text) <= limit else f"{text[:limit]}…"
+
+
+def _result_summary(result: dict[str, object]) -> str:
+    if "error" in result:
+        return f"调用失败：{result['error']}"
+    if "found" in result:
+        return "已找到匹配数据" if result["found"] else "未找到匹配数据"
+    return f"已返回结果：{_json_preview(result)}"

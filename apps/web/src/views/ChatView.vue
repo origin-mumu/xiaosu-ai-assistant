@@ -4,10 +4,15 @@ import { ElMessage } from 'element-plus'
 import { nextTick, reactive, ref } from 'vue'
 
 import { streamChat, type ChatResult, type StreamEvent } from '@/api/chat'
+import type { Citation } from '@/api/documents'
+import DocumentPreviewPane from '@/components/DocumentPreviewPane.vue'
+import MarkdownContent from '@/components/MarkdownContent.vue'
+import ToolCallCards from '@/components/ToolCallCards.vue'
 
 interface ProgressStep {
   stage: string
   label: string
+  detail?: string
   complete: boolean
 }
 
@@ -22,12 +27,19 @@ interface DisplayMessage {
 const input = ref('')
 const sending = ref(false)
 const messages = ref<DisplayMessage[]>([])
+const citationVisible = ref(false)
+const activeCitation = ref<Citation | null>(null)
 const minimumProgressDuration = 240
 const conversationId = sessionStorage.getItem('xiaosu-conversation') ?? crypto.randomUUID()
 sessionStorage.setItem('xiaosu-conversation', conversationId)
 
 function wait(milliseconds: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds))
+}
+
+function openCitation(citation: Citation): void {
+  activeCitation.value = citation
+  citationVisible.value = true
 }
 
 async function send(): Promise<void> {
@@ -57,8 +69,7 @@ async function send(): Promise<void> {
       async (event: StreamEvent) => {
         if (event.type === 'status' && event.stage && event.label) {
           const previous = assistant.progress?.[assistant.progress.length - 1]
-          const isNewStep =
-            !previous || previous.stage !== event.stage || previous.label !== event.label
+          const isNewStep = !previous || previous.stage !== event.stage
           if (previous && isNewStep) {
             const remaining = minimumProgressDuration - (performance.now() - progressStartedAt)
             if (remaining > 0) await wait(remaining)
@@ -68,9 +79,14 @@ async function send(): Promise<void> {
             assistant.progress?.push({
               stage: event.stage,
               label: event.label,
-              complete: false,
+              detail: event.detail,
+              complete: event.phase === 'complete',
             })
             progressStartedAt = performance.now()
+          } else if (previous) {
+            previous.label = event.label
+            previous.detail = event.detail
+            if (event.phase === 'complete') previous.complete = true
           }
         }
         if (event.type === 'delta' && event.content) {
@@ -133,31 +149,32 @@ async function send(): Promise<void> {
                   <el-icon v-if="step.complete"><Check /></el-icon>
                   <i v-else></i>
                 </span>
-                <span>{{ step.label }}</span>
+                <div class="progress-step-copy">
+                  <strong>{{ step.label }}</strong>
+                  <small v-if="step.detail">{{ step.detail }}</small>
+                </div>
               </li>
             </ol>
           </div>
           <div v-if="message.content" class="answer-copy">
-            {{ message.content }}<i v-if="message.streaming" class="stream-caret"></i>
+            <MarkdownContent
+              v-if="message.role === 'assistant'"
+              :content="message.content"
+            />
+            <template v-else>{{ message.content }}</template>
+            <i v-if="message.streaming" class="stream-caret"></i>
           </div>
+          <ToolCallCards
+            v-if="message.result && (message.result.tool_calls.length || message.result.citations.length)"
+            :tool-calls="message.result.tool_calls"
+            :citations="message.result.citations"
+            @open-citation="openCitation"
+          />
           <div v-if="message.result" class="answer-meta">
             <span>{{ message.result.prompt_tokens + message.result.completion_tokens }} Token</span>
             <span>¥{{ message.result.cost.toFixed(6) }}</span>
             <span>{{ message.result.latency_ms }}ms</span>
             <span>{{ message.result.tool_calls.length }} 个工具</span>
-          </div>
-          <div v-if="message.result?.citations.length" class="citation-list">
-            <router-link
-              v-for="citation in message.result.citations"
-              :key="citation.chunk_id"
-              :to="`/documents/${citation.document_id}?chunk=${citation.chunk_id}`"
-            >
-              <strong>
-                {{ citation.filename }} ·
-                {{ citation.section_title ?? `第 ${citation.paragraph_start ?? '-'} 段` }}
-              </strong>
-              <small>{{ citation.content }}</small>
-            </router-link>
           </div>
         </div>
       </div>
@@ -181,4 +198,20 @@ async function send(): Promise<void> {
       ><el-icon><Promotion /></el-icon></el-button>
     </div>
   </el-card>
+
+  <el-dialog
+    v-model="citationVisible"
+    :title="activeCitation?.filename ?? '引用原文'"
+    width="88%"
+    top="5vh"
+    destroy-on-close
+    class="citation-preview-dialog"
+  >
+    <DocumentPreviewPane
+      v-if="activeCitation"
+      :document-id="activeCitation.document_id"
+      :filename="activeCitation.filename"
+      :chunk-id="activeCitation.chunk_id"
+    />
+  </el-dialog>
 </template>

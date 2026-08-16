@@ -1,40 +1,55 @@
-# 千问模型配置
+# 多模型供应商配置与管理指南
 
-小苏的对话生成与文本向量统一使用阿里云百炼，避免同时维护两套供应商凭证。
+小苏智能助手采用标准适配器架构，原生支持 **阿里百炼（通义千问）** 与 **智谱清言（GLM 系列）** 两大主流大模型供应商，并支持在管理后台随时进行无缝热切换。
 
-## 默认模型
+---
 
-| 用途 | 模型 | 选择原因 |
-|---|---|---|
-| 对话和 Agent | `qwen3.7-plus` | 支持 Function Calling，适合知识库与内部工具调度 |
-| 文本向量 | `qwen3.7-text-embedding` | 百炼当前推荐的高质量纯文本向量模型 |
-| 向量维度 | `1024` | 通用场景下兼顾检索质量、存储和计算成本 |
+## 一、支持的供应商与默认模型
 
-## 本地配置
+| 供应商 | 对话大模型（LLM） | 向量嵌入模型（Embedding） | 核心优势 |
+|---|---|---|---|
+| **阿里百炼 (DashScope)** | `qwen3.7-plus`（默认）<br>`qwen-max` / `qwen-plus` / `qwen-turbo` | `qwen3.7-text-embedding`（1024维） | Function Calling 极其敏捷，中文制度理解深刻，国内首选。 |
+| **智谱清言 (ZhipuAI)** | `glm-4-plus`<br>`glm-4-air` / `glm-4-flash` / `glm-4-long` | `embedding-3`（1024维） | 强大的长文本推理能力与代码工具调用表现。 |
 
-复制 `.env.example` 为 `.env`，只在本地填写：
+---
 
-    DASHSCOPE_API_KEY=你的百炼API-Key
+## 二、环境变量配置 (`.env`)
 
-默认使用华北 2（北京）的兼容地址：
+在项目根目录的 `.env` 中填入对应厂商的 API Key：
 
-    DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+```dotenv
+# ==========================================
+# 阿里百炼 (DashScope) 配置
+# ==========================================
+DASHSCOPE_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+DASHSCOPE_CHAT_MODEL=qwen3.7-plus
+DASHSCOPE_EMBEDDING_MODEL=qwen3.7-text-embedding
 
-如果创建 API Key 时控制台显示了专属的 API Host，应以控制台显示的地址为准，例如：
+# ==========================================
+# 智谱清言 (ZhipuAI) 配置
+# ==========================================
+ZHIPUAI_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxx
+ZHIPUAI_BASE_URL=https://open.bigmodel.cn/api/paas/v4/
+ZHIPUAI_CHAT_MODEL=glm-4-plus
+ZHIPUAI_EMBEDDING_MODEL=embedding-3
 
-    https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
+# 当前默认启用的对话模型供应商 (dashscope / zhipuai)
+LLM_PROVIDER=dashscope
+```
 
-API Key 与服务地域必须匹配。切换模型或向量维度后，已有文档向量必须全部重新生成。
+---
 
-## 安全要求
+## 三、管理后台热切换说明
 
-- API Key 只能写入 `.env` 或部署平台 Secret。
-- `.env` 已被 Git 忽略，不得使用强制参数提交。
-- 日志和管理接口只能展示“已配置/未配置”，不能返回密钥原文。
-- 对话与 Embedding 使用同一把百炼 API Key，不在多个字段重复保存。
+1. 登录 Web 管理后台，进入 **「系统设置」** 页面；
+2. 在 **「模型厂商」** 单选组中选择 `阿里百炼 (DashScope)` 或 `智谱清言 (ZhipuAI)`；
+3. 在下拉框中选择具体的模型版本（如 `qwen3.7-plus` 或 `glm-4-plus`），也可直接手动输入自定义模型名；
+4. 点击 **「保存并应用配置」**，后端将配置持久化至数据库，并在下一次 Web 聊天或钉钉对话中立即生效！
 
-## 官方资料
+---
 
-- Function Calling：https://help.aliyun.com/zh/model-studio/qwen-function-calling
-- Embedding：https://help.aliyun.com/zh/model-studio/embedding
-- 获取 API Key：https://help.aliyun.com/zh/model-studio/get-api-key
+## 四、RAG 向量索引兼容性设计（核心架构）
+
+* **解耦原则**：系统的**问答大模型（LLM）**与**向量索引（Embedding）**完全解耦。
+* **向量空间保护**：当你在后台从通义千问切换为智谱 GLM-4 时，底层知识库检索自动保持与当前数据库切片（`qwen3.7-text-embedding` 1024 维）一致的向量客户端，避免因跨厂商向量空间正交而导致的检索失效，确保两家大模型均能 100% 调出知识库引用卡片。

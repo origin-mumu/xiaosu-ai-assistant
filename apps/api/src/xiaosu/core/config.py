@@ -22,20 +22,36 @@ class Settings(BaseSettings):
     log_dir: Path = Field(default=Path("logs"))
     upload_dir: Path = Field(default=Path("uploads"))
     max_upload_bytes: int = 20 * 1024 * 1024
+    duplicate_policy: Literal["replace", "skip"] = "replace"
+    embedding_batch_size: int = 10
     chunk_size: int = 700
     chunk_overlap: int = 100
     retrieval_top_k: int = 5
     retrieval_min_score: float = 0.35
-    llm_provider: Literal["dashscope"] = "dashscope"
+
+    # 多厂商配置：支持 dashscope (阿里百炼) 与 zhipuai (智谱清言)
+    llm_provider: Literal["dashscope", "zhipuai"] = "dashscope"
+    embedding_provider: Literal["dashscope", "zhipuai"] = "dashscope"
+    llm_model: str = "qwen3.7-plus"
+    llm_model_options: str = "qwen3.7-plus,qwen-plus,qwen-max,qwen-turbo"
+
     dashscope_api_key: SecretStr | None = None
     dashscope_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    llm_model: str = "qwen3.7-plus"
+    dashscope_model_options: str = "qwen3.7-plus,qwen-plus,qwen-max,qwen-turbo"
+    dashscope_embedding_model: str = "qwen3.7-text-embedding"
+
+    zhipuai_api_key: SecretStr | None = None
+    zhipuai_base_url: str = "https://open.bigmodel.cn/api/paas/v4"
+    zhipuai_model_options: str = "glm-4-plus,glm-4-air,glm-4-flash,glm-4v-plus,glm-4"
+    zhipuai_embedding_model: str = "embedding-3"
+
     embedding_model: str = "qwen3.7-text-embedding"
     embedding_dimension: int = 1024
     agent_max_steps: int = 5
     model_timeout_seconds: float = 30
     input_price_per_million: float = 0.8
     output_price_per_million: float = 2.0
+
     admin_username: str = "admin"
     admin_password: SecretStr | None = None
     session_secret: SecretStr | None = None

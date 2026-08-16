@@ -52,7 +52,7 @@ services:
   bot:
     image: xiaosu-api
     command: ["python", "-m", "xiaosu.im.worker"]
-    profiles: ["dingtalk"]
+    # profiles: ["dingtalk"]
     environment:
       APP_ENV: development
       DATABASE_URL: postgresql+asyncpg://xiaosu:xiaosu@postgres:5432/xiaosu

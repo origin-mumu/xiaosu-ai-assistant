@@ -1,11 +1,13 @@
 import logging
 import sys
+from threading import Event, Thread
 
 from dingtalk_stream import ChatbotMessage, Credential, DingTalkStreamClient
 
 from xiaosu.core.config import get_settings
 from xiaosu.core.logging import setup_logging
 from xiaosu.im.dingtalk import XiaosuDingTalkHandler
+from xiaosu.im.status import write_heartbeat
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +30,20 @@ def main() -> int:
         ChatbotMessage.TOPIC,
         XiaosuDingTalkHandler(settings),
     )
+    stop_event = Event()
+    heartbeat = Thread(
+        target=write_heartbeat,
+        args=(settings.log_dir, stop_event),
+        name="dingtalk-heartbeat",
+        daemon=True,
+    )
+    heartbeat.start()
     logger.info("Starting DingTalk Stream client")
-    client.start_forever()
+    try:
+        client.start_forever()
+    finally:
+        stop_event.set()
+        heartbeat.join(timeout=2)
     return 0
 
 

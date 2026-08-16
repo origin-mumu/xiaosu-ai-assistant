@@ -38,6 +38,20 @@ class ChunkResponse(BaseModel):
     content: str
 
 
+class OriginalSegmentResponse(BaseModel):
+    index: int
+    content: str
+    section_title: str | None = None
+    page_number: int | None = None
+    paragraph_number: int | None = None
+
+
+class DocumentPreviewResponse(BaseModel):
+    filename: str
+    mime_type: str
+    segments: list[OriginalSegmentResponse]
+
+
 class Citation(BaseModel):
     chunk_id: UUID
     document_id: UUID

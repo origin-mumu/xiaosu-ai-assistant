@@ -55,12 +55,49 @@ class MessageUserOption(BaseModel):
     label: str
 
 
+class QuestionAnswerLogResponse(BaseModel):
+    question: MessageLogResponse
+    answer: MessageLogResponse | None = None
+
+
 class MessagePageResponse(BaseModel):
-    items: list[MessageLogResponse]
+    items: list[QuestionAnswerLogResponse]
     total: int
     page: int
     page_size: int
     users: list[MessageUserOption]
+
+
+class ToolCallLogResponse(BaseModel):
+    id: str
+    message_id: UUID
+    conversation_id: UUID
+    platform: str
+    external_user_id: str
+    user_name: str | None
+    tool_name: str
+    arguments: dict[str, object]
+    result: object
+    duration_ms: int | None = None
+    success: bool
+    created_at: datetime
+
+
+class ToolCallPageResponse(BaseModel):
+    items: list[ToolCallLogResponse]
+    total: int
+    page: int
+    page_size: int
+    tool_names: list[str]
+
+
+class ToolDefinitionResponse(BaseModel):
+    id: str
+    name: str
+    description: str
+    category: str
+    parameters: list[str]
+    enabled: bool = True
 
 
 @dataclass(slots=True)
@@ -90,6 +127,11 @@ class AgentStreamEvent:
     type: Literal["status", "delta", "done"]
     stage: str | None = None
     label: str | None = None
+    detail: str | None = None
+    phase: Literal["start", "complete"] | None = None
+    tool_name: str | None = None
+    arguments: dict[str, object] | None = None
+    tool_result: object | None = None
     content: str = ""
     result: "AgentResult | None" = None
 

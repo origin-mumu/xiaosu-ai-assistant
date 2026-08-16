@@ -15,10 +15,10 @@ TOOL_DEFINITIONS: list[dict[str, object]] = [
         "type": "function",
         "function": {
             "name": "search_knowledge",
-            "description": "检索公司制度、员工手册、流程、FAQ 和其他已上传文档。",
+            "description": "【必须调用】检索公司内部知识库，包括公司规章制度、员工手册、员工年假及各类假期天数规定、报销流程与发票材料、入职指引、FAQ。凡涉及公司制度、年假福利、报销等问题，必须先调用此工具检索本公司文档，严禁直接凭常识回答。",
             "parameters": {
                 "type": "object",
-                "properties": {"query": {"type": "string", "description": "完整检索问题"}},
+                "properties": {"query": {"type": "string", "description": "检索关键词或问题"}},
                 "required": ["query"],
                 "additionalProperties": False,
             },
@@ -44,7 +44,7 @@ TOOL_DEFINITIONS: list[dict[str, object]] = [
             "description": "按三位员工编号查询姓名、部门、职级等信息。",
             "parameters": {
                 "type": "object",
-                "properties": {"employee_id": {"type": "string", "pattern": "^\\d{3}$"}},
+                "properties": {"employee_id": {"type": "string", "pattern": r"^\d{3}$"}},
                 "required": ["employee_id"],
                 "additionalProperties": False,
             },

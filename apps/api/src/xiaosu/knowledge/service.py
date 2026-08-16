@@ -9,8 +9,8 @@ from sqlalchemy.orm import joinedload
 from xiaosu.core.config import Settings
 from xiaosu.db.models import Document, DocumentChunk
 from xiaosu.knowledge.chunker import chunk_segments
-from xiaosu.knowledge.embeddings import DashScopeEmbeddingClient
-from xiaosu.knowledge.parser import parse_document
+from xiaosu.knowledge.embeddings import create_embedding_client
+from xiaosu.knowledge.parser import TextSegment, parse_document
 from xiaosu.knowledge.schemas import Citation
 
 
@@ -37,6 +37,17 @@ class DocumentService:
             raise DocumentNotFoundError(str(document_id))
         return document
 
+    async def get_original(self, document_id: UUID) -> tuple[Document, Path]:
+        document = await self.get_document(document_id)
+        path = self.settings.upload_dir / document.stored_name
+        if not path.is_file():
+            raise DocumentNotFoundError(str(document_id))
+        return document, path
+
+    async def preview_original(self, document_id: UUID) -> tuple[Document, list[TextSegment]]:
+        document, path = await self.get_original(document_id)
+        return document, parse_document(document.filename, path.read_bytes())
+
     async def save_and_index(
         self,
         filename: str,
@@ -46,6 +57,8 @@ class DocumentService:
         digest = hashlib.sha256(content).hexdigest()
         existing = await self.session.scalar(select(Document).where(Document.filename == filename))
         if existing is not None and existing.content_hash == digest:
+            return "unchanged", existing
+        if existing is not None and self.settings.duplicate_policy == "skip":
             return "unchanged", existing
 
         self.settings.upload_dir.mkdir(parents=True, exist_ok=True)
@@ -99,10 +112,11 @@ class DocumentService:
             )
             if not chunks:
                 raise EmptyDocumentError("文档没有可索引的文本内容")
-            embedder = DashScopeEmbeddingClient(self.settings)
+            embedder = create_embedding_client(self.settings)
             embeddings: list[list[float]] = []
-            for start in range(0, len(chunks), 10):
-                batch = chunks[start : start + 10]
+            batch_size = self.settings.embedding_batch_size
+            for start in range(0, len(chunks), batch_size):
+                batch = chunks[start : start + batch_size]
                 embeddings.extend(await embedder.embed([chunk.content for chunk in batch]))
             for index, (chunk, embedding) in enumerate(zip(chunks, embeddings, strict=True)):
                 self.session.add(
@@ -157,7 +171,7 @@ class DocumentService:
         return list(result)
 
     async def search(self, query: str, limit: int) -> list[Citation]:
-        embedder = DashScopeEmbeddingClient(self.settings)
+        embedder = create_embedding_client(self.settings)
         query_vector = (await embedder.embed([query]))[0]
         distance = DocumentChunk.embedding.cosine_distance(query_vector)
         rows = await self.session.execute(

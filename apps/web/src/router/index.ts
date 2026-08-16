@@ -34,6 +34,12 @@ const router = createRouter({
       meta: { title: '对话日志', description: '查看用户、工具、Token、耗时和失败原因' },
     },
     {
+      path: '/tools',
+      name: 'tools',
+      component: () => import('@/views/ToolsView.vue'),
+      meta: { title: '工具管理', description: '查看 Agent 可使用的业务工具与能力' },
+    },
+    {
       path: '/chat',
       name: 'chat',
       component: () => import('@/views/ChatView.vue'),

@@ -3,5 +3,5 @@ set -euo pipefail
 
 (
   cd apps/api
-  uv run python ../../scripts/generate_samples.py
+  uv run python ../../scripts/tools/generate_samples.py
 )

@@ -2,6 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from xiaosu.api.auth import require_admin
@@ -10,10 +11,12 @@ from xiaosu.db.session import get_session
 from xiaosu.knowledge.parser import SUPPORTED_EXTENSIONS, UnsupportedDocumentError
 from xiaosu.knowledge.schemas import (
     ChunkResponse,
+    DocumentPreviewResponse,
     DocumentResponse,
     DocumentUploadResponse,
     KnowledgeSearchRequest,
     KnowledgeSearchResponse,
+    OriginalSegmentResponse,
 )
 from xiaosu.knowledge.service import DocumentNotFoundError, DocumentService
 
@@ -39,7 +42,7 @@ async def list_documents(document_service: ServiceDependency) -> list[DocumentRe
 async def upload_document(
     document_service: ServiceDependency,
     settings: SettingsDependency,
-    file: Annotated[UploadFile, File(description="md/txt/pdf/docx，最大 20 MB")],
+    file: Annotated[UploadFile, File(description="md/txt/pdf/docx")],
 ) -> DocumentUploadResponse:
     filename = (file.filename or "").strip()
     if not filename:
@@ -48,7 +51,8 @@ async def upload_document(
         raise HTTPException(status_code=415, detail="仅支持 md、txt、pdf、docx")
     content = await file.read(settings.max_upload_bytes + 1)
     if len(content) > settings.max_upload_bytes:
-        raise HTTPException(status_code=413, detail="文件超过 20 MB")
+        max_upload_mb = settings.max_upload_bytes // (1024 * 1024)
+        raise HTTPException(status_code=413, detail=f"文件超过 {max_upload_mb} MB")
     try:
         action, document = await document_service.save_and_index(
             filename,
@@ -70,6 +74,48 @@ async def search_knowledge(
 ) -> KnowledgeSearchResponse:
     citations = await document_service.search(request.query, request.limit)
     return KnowledgeSearchResponse(citations=citations)
+
+
+@router.get("/{document_id}/file")
+async def get_original_file(
+    document_id: UUID,
+    document_service: ServiceDependency,
+) -> FileResponse:
+    try:
+        document, path = await document_service.get_original(document_id)
+    except DocumentNotFoundError as error:
+        raise HTTPException(status_code=404, detail="原文件不存在") from error
+    return FileResponse(
+        path,
+        media_type=document.mime_type,
+        filename=document.filename,
+        content_disposition_type="inline",
+    )
+
+
+@router.get("/{document_id}/preview", response_model=DocumentPreviewResponse)
+async def preview_original_file(
+    document_id: UUID,
+    document_service: ServiceDependency,
+) -> DocumentPreviewResponse:
+    try:
+        document, segments = await document_service.preview_original(document_id)
+    except DocumentNotFoundError as error:
+        raise HTTPException(status_code=404, detail="原文件不存在") from error
+    return DocumentPreviewResponse(
+        filename=document.filename,
+        mime_type=document.mime_type,
+        segments=[
+            OriginalSegmentResponse(
+                index=index,
+                content=segment.text,
+                section_title=segment.section_title,
+                page_number=segment.page_number,
+                paragraph_number=segment.paragraph_number,
+            )
+            for index, segment in enumerate(segments, start=1)
+        ],
+    )
 
 
 @router.get("/{document_id}", response_model=DocumentResponse)

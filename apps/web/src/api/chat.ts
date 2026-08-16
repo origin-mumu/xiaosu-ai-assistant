@@ -26,6 +26,8 @@ export interface StreamEvent {
   type: 'status' | 'delta' | 'done'
   stage?: string
   label?: string
+  detail?: string
+  phase?: 'start' | 'complete'
   content?: string
   data?: ChatResult
 }
