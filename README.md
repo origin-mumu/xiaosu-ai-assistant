@@ -6,11 +6,11 @@
 
 ## 🌟 核心特性与亮点
 
-- 🚀 **多模型供应商热切换（核心加分项）**：
+- 🚀 **多模型供应商热切换**：
   - 抽象适配层原生支持 **阿里百炼（通义千问 Qwen3.7/Max）** 与 **智谱清言（GLM-4 系列）**；
   - 管理后台一键热切换，RAG 向量索引完美解耦，彻底避免跨模型空间失效。
 - 📚 **生产级企业知识库 RAG**：
-  - 支持 **Markdown / TXT / PDF / Word** 4 种主流格式上传、解析与自动切片；
+  - 支持 **Markdown / TXT / PDF / Word** 4 种主流格式批量多选上传、解析与自动切片；
   - 同名文件 SHA-256 智能去重与版本更新，删除文档级联清除向量切片；
   - 引用附带文档名称、章节标题、页码与段落序号，支持**原文弹窗高亮定位跳转**；
   - 相似度低于阈值（0.35）时触发系统级严格拒答，杜绝模型虚构信息。
@@ -39,7 +39,7 @@
 
 ---
 
-## 🚀 快速上手与本地部署
+## 🚀 快速上手与本地/服务器部署
 
 ### 1. 克隆代码与配置环境变量
 
@@ -50,35 +50,41 @@ cp .env.example .env
 
 编辑根目录下的 `.env` 文件，填入模型 API Key 与管理员密码（详见 `.env.example` 说明）：
 ```dotenv
-DASHSCOPE_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# 大模型配置（支持智谱清言或阿里云百炼）
 ZHIPUAI_API_KEY=xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxx
-ADMIN_PASSWORD=xiaosu_admin_secret
+# DASHSCOPE_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# 钉钉 Stream 机器人凭证（可选，配置后自动监听）
+DINGTALK_CLIENT_ID=your_client_id
+DINGTALK_CLIENT_SECRET=your_client_secret
+
+# 管理员默认密码（默认 admin1500）
+ADMIN_PASSWORD=admin1500
 ```
 
-### 2. Docker Compose 一键启动
+### 2. Docker Compose 一键启动（全部服务）
 
 ```bash
-# 启动核心服务 (PostgreSQL + API + Web 前端)
+# 一键编译并启动全部服务（PostgreSQL 向量库 + API + Web 前端 + 钉钉 Stream 机器人）
 docker compose up -d --build
-
-# 若需同时启动钉钉机器人，添加 --profile dingtalk
-docker compose --profile dingtalk up -d --build
 ```
 
 启动完成后访问：
-- **Web 管理后台**：`http://localhost:5173`（默认账号：`admin`，密码见 `.env` 中的 `ADMIN_PASSWORD`）
-- **FastAPI 接口文档**：`http://localhost:8000/docs`
+- **Web 管理后台**：`http://localhost:8080`（或服务器 `http://<公网IP>:8080`）
+  - **默认管理员账号**：`admin`
+  - **默认管理员密码**：`admin1500`（登录页下方附提示，可在 `.env` 中修改）
+- **FastAPI 接口文档 (OpenAPI)**：`http://localhost:8000/docs`
 
 ---
 
 ## 🧪 自动化测试与质量保障
 
-项目内置 23 项全量离线自动化测试，覆盖 Mock LLM 状态机、工具拦截、时区计算及多厂商适配：
+项目内置 23 项全量自动化测试，覆盖 Mock LLM 状态机、知识库切片、工具拦截、时区计算及多厂商适配：
 
 ```bash
-# 进入 API 目录执行测试
+# 进入 API 目录执行全量测试
 cd apps/api
-pytest -v
+pytest -o asyncio_mode=auto -v
 ```
 
 ---
