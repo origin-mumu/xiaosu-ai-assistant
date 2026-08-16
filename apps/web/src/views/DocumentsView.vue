@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Setting } from '@element-plus/icons-vue'
+import { Setting, Upload } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, type UploadRequestOptions } from 'element-plus'
 import { nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -25,6 +25,7 @@ const router = useRouter()
 const documents = ref<DocumentItem[]>([])
 const chunks = ref<DocumentChunk[]>([])
 const loading = ref(false)
+const uploadingCount = ref(0)
 const detailVisible = ref(false)
 const currentDocument = ref<DocumentItem | null>(null)
 const activeDetailTab = ref<'original' | 'chunks'>('original')
@@ -64,16 +65,19 @@ async function refresh(): Promise<void> {
   }
 }
 async function handleUpload(options: UploadRequestOptions): Promise<void> {
+  uploadingCount.value += 1
   try {
     const result = await uploadDocument(options.file)
     ElMessage.success(
       result.action === 'unchanged'
-        ? '上传已跳过：内容未变化或当前同名策略为保留'
-        : '原文件已保存并完成索引',
+        ? `「${options.file.name}」已跳过：内容未变或策略为保留`
+        : `「${options.file.name}」已完成解析与向量索引（生成 ${result.chunk_count} 个切片）`,
     )
     await refresh()
   } catch (error: unknown) {
-    ElMessage.error(error instanceof Error ? error.message : '上传失败')
+    ElMessage.error(`「${options.file.name}」上传失败：${error instanceof Error ? error.message : '网络异常'}`)
+  } finally {
+    uploadingCount.value = Math.max(0, uploadingCount.value - 1)
   }
 }
 async function handleDelete(item: DocumentItem): Promise<void> {
@@ -148,19 +152,24 @@ onMounted(async () => {
   <el-card shadow="never">
     <div class="toolbar">
       <div>
-        <strong>知识库文件</strong>
-        <p>原始文件持久化保存，可分别查看原文预览和索引切片。</p>
+        <strong>知识库文档</strong>
+        <p>原始文件持久化保存，支持批量上传、自动分块与余弦向量索引。</p>
       </div>
       <div class="document-toolbar-actions">
         <el-button :icon="Setting" @click="openSettings">知识库设置</el-button>
         <el-upload
           :show-file-list="false"
+          multiple
           accept=".md,.txt,.pdf,.docx"
           :http-request="handleUpload"
-        ><el-button type="primary">上传文档</el-button></el-upload>
+        >
+          <el-button type="primary" :icon="Upload" :loading="uploadingCount > 0">
+            {{ uploadingCount > 0 ? `正在索引 (${uploadingCount})...` : '批量上传文档' }}
+          </el-button>
+        </el-upload>
       </div>
     </div>
-    <el-table :data="documents" v-loading="loading" empty-text="暂无文档，请先上传测试资料">
+    <el-table :data="documents" v-loading="loading || uploadingCount > 0" empty-text="暂无文档，请先上传测试资料">
       <el-table-column prop="filename" label="文件名" min-width="220" />
       <el-table-column label="状态" width="120">
         <template #default="scope">
@@ -220,41 +229,41 @@ onMounted(async () => {
       <div class="setting-field-grid">
         <el-form-item label="分块长度">
           <el-input-number v-model="knowledgeSettings.chunk_size" :min="200" :max="4000" :step="50" />
-          <small>单个索引切片的最大字符数。</small>
+          <small>单个索引切片的最大字符数量</small>
         </el-form-item>
         <el-form-item label="分块重叠">
           <el-input-number v-model="knowledgeSettings.chunk_overlap" :min="0" :max="1000" :step="25" />
-          <small>保留相邻切片之间的上下文。</small>
+          <small>保留相邻切片之间的上下文</small>
         </el-form-item>
         <el-form-item label="检索数量 Top K">
           <el-input-number v-model="knowledgeSettings.retrieval_top_k" :min="1" :max="20" />
-          <small>每次问答最多取回的候选切片数。</small>
+          <small>每次问答最多取回的候选切片数量</small>
         </el-form-item>
         <el-form-item label="最低相似度">
           <el-input-number v-model="knowledgeSettings.retrieval_min_score" :min="0" :max="1" :step="0.05" :precision="2" />
-          <small>低于此分数的切片不会成为引用。</small>
+          <small>低于此分数的切片不会成为引用源</small>
         </el-form-item>
         <el-form-item label="单文件大小上限">
           <el-input-number v-model="knowledgeSettings.max_upload_mb" :min="1" :max="100" :step="5" />
-          <small>允许管理员上传的单个文件最大体积（MB）。</small>
+          <small>允许管理员上传的单个文件最大体积（MB）</small>
         </el-form-item>
         <el-form-item label="Embedding 批次">
           <el-input-number v-model="knowledgeSettings.embedding_batch_size" :min="1" :max="50" />
-          <small>每次向量化请求处理的切片数量。</small>
+          <small>每次向量化请求处理的切片数量</small>
         </el-form-item>
         <el-form-item label="同名文件处理">
           <el-select v-model="knowledgeSettings.duplicate_policy">
             <el-option label="替换并创建新版本" value="replace" />
             <el-option label="保留已有文件并跳过" value="skip" />
           </el-select>
-          <small>控制上传同名但内容不同的文件时如何处理。</small>
+          <small>控制上传同名但内容不同的文件时如何处理</small>
         </el-form-item>
         <el-form-item label="支持格式">
           <div class="supported-format-list">
             <el-tag effect="plain">PDF</el-tag><el-tag effect="plain">Markdown</el-tag>
             <el-tag effect="plain">Word</el-tag><el-tag effect="plain">TXT</el-tag>
           </div>
-          <small>上传后保留原文件，并生成可定位的索引切片。</small>
+          <small>上传后保留原文件，并生成可定位的索引切片</small>
         </el-form-item>
       </div>
     </el-form>
