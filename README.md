@@ -7,7 +7,7 @@
 ## 🌟 核心特性与亮点
 
 - 🚀 **多模型供应商热切换**：
-  - 抽象适配层原生支持 **阿里百炼（通义千问 Qwen3.7/Max）** 与 **智谱清言（GLM-4 系列）**；
+  - 抽象适配层原生支持 **智谱清言（GLM-4 系列）** 与 **阿里百炼（通义千问 Qwen 系列）**；
   - 管理后台一键热切换，RAG 向量索引完美解耦，彻底避免跨模型空间失效。
 - 📚 **生产级企业知识库 RAG**：
   - 支持 **Markdown / TXT / PDF / Word** 4 种主流格式批量多选上传、解析与自动切片；
@@ -31,7 +31,7 @@
 ## 🛠️ 技术栈选型
 
 - **后端开发**：Python 3.12+ / FastAPI / SQLAlchemy (Asyncpg) / pgvector / Pydantic v2
-- **大模型生态**：OpenAI SDK 协议兼容 / 阿里云百炼（通义千问） / 智谱清言（GLM-4）
+- **大模型生态**：OpenAI SDK 协议兼容 / 智谱清言（GLM-4） / 阿里云百炼（通义千问）
 - **前端开发**：Vue 3 / Vite / TypeScript / Element Plus / Marked / DOMPurify
 - **数据库与向量存储**：PostgreSQL 16 + pgvector 向量扩展
 - **IM 客户端**：DingTalk Stream Client (Python SDK)
@@ -48,17 +48,24 @@
 cp .env.example .env
 ```
 
-编辑根目录下的 `.env` 文件，填入模型 API Key 与管理员密码（详见 `.env.example` 说明）：
+编辑根目录下的 `.env` 文件，填入对应模型的 API Key（详见 `.env.example` 说明）：
 ```dotenv
-# 大模型配置（支持智谱清言或阿里云百炼）
-ZHIPUAI_API_KEY=xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxx
-# DASHSCOPE_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# 1. 大模型配置（按需填入智谱或百炼 Key）
+LLM_PROVIDER=zhipuai
+LLM_MODEL=glm-4-plus
+ZHIPUAI_API_KEY=你的智谱清言API-Key
+DASHSCOPE_API_KEY=你的阿里云百炼API-Key
 
-# 钉钉 Stream 机器人凭证（可选，配置后自动监听）
+# 2. 访问地址配置（本地填 localhost，服务器填服务器公网 IP 或域名）
+WEB_ORIGIN=http://localhost:8080
+PUBLIC_BASE_URL=http://localhost:8080
+
+# 3. 钉钉机器人配置（可选，配置后容器自动启动长连接监听）
 DINGTALK_CLIENT_ID=your_client_id
 DINGTALK_CLIENT_SECRET=your_client_secret
 
-# 管理员默认密码（默认 admin1500）
+# 4. 管理员登录密码（默认 admin1500）
+ADMIN_USERNAME=admin
 ADMIN_PASSWORD=admin1500
 ```
 
